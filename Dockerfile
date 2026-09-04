@@ -10,9 +10,7 @@ RUN npm ci --omit=dev || npm install --omit=dev
 
 COPY src ./src
 
-# Volume must be mounted at /data (Railway: Service → Volumes → mount path /data)
-ENV TDLIB_DIR=/data/tdlib
-VOLUME ["/data"]
+# Volume is attached via Railway dashboard/API at /data (VOLUME directive unsupported)
 
 EXPOSE 3000
 CMD ["node", "src/index.js"]
