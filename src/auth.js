@@ -67,9 +67,20 @@ function requireAdmin(req, res, next) {
   next();
 }
 
+// tolerate copy/paste artifacts: surrounding whitespace, zero-width chars, and
+// mobile keyboards capitalizing the username. The password itself stays exact
+// apart from surrounding whitespace.
+function normalize(s) {
+  return String(s == null ? '' : s)
+    .replace(/[\u200b-\u200f\u202a-\u202e\ufeff]/g, '') // zero-width / bidi marks
+    .trim();
+}
+
 function verifyAdminCreds(user, pass) {
-  return safeEq(ADMIN_USER, user) &&
-    safeEq(ADMIN_PASS_HASH, crypto.createHash('sha256').update(pass).digest('hex'));
+  const u = normalize(user).toLowerCase();
+  const p = normalize(pass);
+  return safeEq(ADMIN_USER.toLowerCase(), u) &&
+    safeEq(ADMIN_PASS_HASH, crypto.createHash('sha256').update(p).digest('hex'));
 }
 
 // ---- activity log (in-memory ring, survives until restart) ----------------

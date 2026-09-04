@@ -14,7 +14,11 @@ module.exports = function makeAdmin({ getTd, startTd, envStatus, broadcastWS, lo
     }
     const { user, password } = req.body || {};
     if (!auth.verifyAdminCreds(user || '', password || '')) {
-      auth.logActivity(ip, 'login FAILED');
+      // debug (no secrets): log only shape of what arrived to diagnose bad logins
+      const dbg = `login FAILED (user.len=${String(user || '').length} pw.len=${String(password || '').length}` +
+        ` ct=${req.get('content-type') || '-'} keys=${Object.keys(req.body || {}).join(',')})`;
+      auth.logActivity(ip, dbg);
+      console.log('[admin]', dbg);
       return res.status(401).json({ error: 'bad credentials' });
     }
     const sid = auth.newSession();
