@@ -51,6 +51,12 @@ function req(method, path, { headers = {}, body } = {}) {
   const s0 = await req('GET', '/admin/status');
   t('/admin/status no session -> 401', s0.status === 401);
 
+  // static dashboard shell must be PUBLIC (login page renders), data gated
+  const sh = await req('GET', '/admin/');
+  t('/admin/ shell public -> 200 html', sh.status === 200 && /<!doctype html|<html/i.test(String(sh.json)));
+  const sh2 = await req('GET', '/admin/status', { headers: { } });
+  t('/admin/status JSON still gated -> 401', sh2.status === 401);
+
   // 6 wrong logins -> 6th gets 429
   let got429 = false;
   for (let i = 0; i < 6; i++) {

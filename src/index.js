@@ -74,8 +74,10 @@ const adminRouter = makeAdmin({
   broadcastWS,
   logActivity: auth.logActivity,
 });
-app.use('/admin', adminRouter);
+// static dashboard shell FIRST (public — holds no secrets); when the path is a
+// JSON API route, express.static falls through with next() to the gated router
 app.use('/admin', express.static(path.join(__dirname, 'admin_static')));
+app.use('/admin', adminRouter);
 
 // ---- WebSocket push ---------------------------------------------------------
 const server = http.createServer(app);
