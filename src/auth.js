@@ -50,6 +50,18 @@ function checkSession(sid) {
 
 function destroySession(sid) { sessions.delete(sid); }
 
+function destroyOthers(keepSid) {
+  for (const sid of [...sessions.keys()]) if (sid !== keepSid) sessions.delete(sid);
+}
+
+function listSessions() {
+  return [...sessions.entries()].map(([sid, s]) => ({
+    sid: sid.slice(0, 12) + '…',              // never expose the full sid
+    expires_in_min: Math.max(0, Math.round((s.expires - Date.now()) / 60000)),
+    current: false, // filled by caller if needed
+  }));
+}
+
 // login rate limiting: max 5 attempts / 10 min per IP
 const attempts = new Map(); // ip -> [timestamps]
 function rateLimitLogin(ip) {
@@ -92,5 +104,6 @@ function logActivity(ip, action) {
 
 module.exports = {
   requireApiToken, requireAdmin, newSession, checkSession, destroySession,
+  destroyOthers, listSessions,
   rateLimitLogin, verifyAdminCreds, logActivity, activityLog, safeEq,
 };

@@ -43,7 +43,6 @@ module.exports = function makeAdmin({ getTd, startTd, envStatus, broadcastWS, lo
       tdState: td ? td.state : 'not-started',
       tdDetail: td ? td.stateDetail : null,
       me: td ? td.me : null,
-      wsClients: broadcastWS ? undefined : undefined, // filled by index? keep simple
       process: {
         pid: process.pid,
         uptimeSec: Math.round(process.uptime()),
@@ -51,6 +50,84 @@ module.exports = function makeAdmin({ getTd, startTd, envStatus, broadcastWS, lo
         heapMB: +(mem.heapUsed / 1048576).toFixed(1),
       },
     });
+  });
+
+  // account summary for the home page (chats count, unread)
+  router.get('/me', async (req, res) => {
+    const td = getTd();
+    if (!td) return res.status(503).json({ error: 'tdlib not started' });
+    if (td.state !== 'ready') return res.json({ ready: false, state: td.state });
+    try {
+      const chats = await td.invoke({ _: 'getChats', chat_list: { _: 'chatListMain' }, limit_chat_ids: 100 });
+      let total_unread = 0;
+      for (const id of (chats.chat_ids || []).slice(0, 50)) {
+        try { const c = await td.invoke({ _: 'getChat', chat_id: id }); total_unread += c.unread_count || 0; } catch { /* skip */ }
+      }
+      res.json({ ready: true, me: td.me, chats: (chats.chat_ids || []).length, unread: total_unread });
+    } catch (e) {
+      res.status(e.status || 500).json({ error: e.message });
+    }
+  });
+
+  // quick chat list (home page preview)
+  router.get('/chats', async (req, res) => {
+    const td = getTd();
+    if (!td) return res.status(503).json({ error: 'tdlib not started' });
+    if (td.state !== 'ready') return res.status(409).json({ error: `tdlib not ready (state: ${td.state})` });
+    try {
+      const limit = Math.min(parseInt(req.query.limit || '20', 10) || 20, 100);
+      const r = await td.invoke({ _: 'getChats', chat_list: { _: 'chatListMain' }, limit_chat_ids: limit });
+      const chats = [];
+      for (const id of (r.chat_ids || [])) {
+        try {
+          const c = await td.invoke({ _: 'getChat', chat_id: id });
+          chats.push({
+            id: c.id, title: c.title, unread: c.unread_count,
+            last: c.last_message && c.last_message.content && c.last_message.content.text
+              ? (c.last_message.content.text.text || '').slice(0, 80) : '',
+          });
+        } catch { /* skip */ }
+      }
+      res.json({ count: chats.length, chats });
+    } catch (e) {
+      res.status(e.status || 500).json({ error: e.message });
+    }
+  });
+
+  // ---- session backup: zip the TDLib database dir and stream it ----------------
+  router.get('/backup', async (req, res) => {
+    const dir = process.env.TDLIB_DIR || '/data/tdlib';
+    auth.logActivity(req.ip, 'backup: session archive requested');
+    // python3 zipfile streams a deterministic PK archive; no zip binary needed
+    const { spawn } = require('child_process');
+    res.setHeader('Content-Type', 'application/zip');
+    res.setHeader('Content-Disposition', `attachment; filename="tdlib-session-${Date.now()}.zip"`);
+    const py = spawn('python3', ['-c',
+      'import sys,os,zipfile; d=sys.argv[1]; z=zipfile.ZipFile(sys.stdout.buffer,"w",zipfile.ZIP_STORED); [z.write(os.path.join(r,f),os.path.relpath(os.path.join(r,f),d)) for r,_,fs in os.walk(d) for f in fs]; z.close()',
+      dir]);
+    py.stdout.pipe(res);
+    let errbuf = '';
+    py.stderr.on('data', d => { errbuf += d; if (errbuf.length > 500) errbuf = errbuf.slice(-500); });
+    py.on('close', code => {
+      if (code !== 0) console.error('[backup] zip failed rc=' + code, errbuf.slice(0, 300));
+    });
+    py.on('error', () => res.status(500).json({ error: 'backup failed: python3 unavailable' }));
+  });
+
+  // ---- admin sessions (who is logged into the dashboard) -----------------------
+  router.get('/sessions', (req, res) => {
+    res.json({ sessions: auth.listSessions() });
+  });
+  router.post('/sessions/revoke', (req, res) => {
+    const { sid } = req.body || {};
+    auth.destroySession(String(sid || ''));
+    auth.logActivity(req.ip, `session revoked: ${String(sid || '').slice(0, 8)}…`);
+    res.json({ ok: true });
+  });
+  router.post('/sessions/revoke-others', (req, res) => {
+    auth.destroyOthers(req.adminSid);
+    auth.logActivity(req.ip, 'all other admin sessions revoked');
+    res.json({ ok: true });
   });
 
   // ---- tdlib control ----------------------------------------------------------

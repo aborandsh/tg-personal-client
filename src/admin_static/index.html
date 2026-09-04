@@ -2,90 +2,412 @@
 <html lang="fa" dir="rtl">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>TG Client — Admin</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>TG Client — داشبورد</title>
 <style>
-:root{--bg:#0f1420;--card:#171e2e;--fg:#e8ecf4;--dim:#8b95a9;--acc:#4f8cff;--ok:#37c977;--warn:#ffb02e;--err:#ff5d5d}
-*{box-sizing:border-box}body{background:var(--bg);color:var(--fg);font-family:Vazirmatn,Tahoma,sans-serif;margin:0;padding:16px}
-h1{font-size:1.2rem;margin:0 0 12px}.card{background:var(--card);border-radius:12px;padding:14px;margin-bottom:12px}
-button{background:var(--acc);color:#fff;border:0;border-radius:8px;padding:8px 14px;margin:2px;cursor:pointer;font-family:inherit}
-button.warn{background:var(--warn);color:#000}button.err{background:var(--err)}button.ghost{background:#2a3247}
-input{background:#0c111c;border:1px solid #2a3247;color:var(--fg);border-radius:8px;padding:8px;width:100%;margin:4px 0;font-family:inherit}
-.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.lbl{color:var(--dim);font-size:.85rem}
-.badge{padding:2px 10px;border-radius:999px;font-size:.8rem}.b-ok{background:#103b26;color:var(--ok)}.b-warn{background:#3d2e10;color:var(--warn)}.b-err{background:#3d1515;color:var(--err)}
-#logs{max-height:260px;overflow:auto;background:#0c111c;border-radius:8px;padding:8px;font-family:monospace;font-size:.75rem;direction:ltr;text-align:left;white-space:pre-wrap}
-#statusGrid div{margin:3px 0}
-@media(max-width:600px){#logs{max-height:180px}}
+:root{
+  --bg:#17212b; --panel:#1c2733; --panel2:#232e3c; --line:#101921;
+  --fg:#eef3f7; --dim:#7d8b99; --acc:#5288c1; --acc2:#3d6a96;
+  --ok:#4fae4e; --warn:#e8a33d; --err:#e0544f;
+  --rad:12px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{background:var(--bg);color:var(--fg);margin:0;font-family:Vazirmatn,Tahoma,sans-serif;font-size:15px}
+button{font-family:inherit;cursor:pointer;border:0;border-radius:9px}
+input{font-family:inherit}
+/* ---------- header ---------- */
+#hdr{position:sticky;top:0;z-index:20;background:var(--panel);border-bottom:1px solid var(--line);
+     display:flex;align-items:center;gap:10px;padding:10px 14px}
+#burger{background:none;color:var(--fg);font-size:22px;padding:4px 8px;line-height:1}
+#hdrTitle{font-weight:700;font-size:16px;flex:1}
+#hdrState{font-size:12px;color:var(--dim)}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-inline-start:4px}
+.dot.ok{background:var(--ok)} .dot.warn{background:var(--warn)} .dot.err{background:var(--err)}
+/* ---------- drawer ---------- */
+#drawer{position:fixed;inset:0;z-index:30;display:none}
+#drawer.open{display:block}
+#scrim{position:absolute;inset:0;background:rgba(0,0,0,.45)}
+#menu{position:absolute;top:0;bottom:0;right:0;width:270px;background:var(--panel);
+      padding:16px 10px;box-shadow:-6px 0 24px rgba(0,0,0,.4);display:flex;flex-direction:column;gap:2px}
+#menu .mi{display:flex;align-items:center;gap:10px;padding:11px 14px;border-radius:10px;color:var(--fg);
+          background:none;font-size:15px;text-align:right;width:100%}
+#menu .mi.active{background:var(--acc2)}
+#menu .mi:active{filter:brightness(1.2)}
+#menu .spacer{flex:1}
+#menu .who{padding:10px 14px;color:var(--dim);font-size:13px;border-top:1px solid var(--line)}
+/* ---------- pages ---------- */
+.page{display:none;padding:14px;max-width:760px;margin:0 auto}
+.page.active{display:block}
+.card{background:var(--panel);border-radius:var(--rad);padding:14px;margin-bottom:12px;border:1px solid var(--line)}
+.card h3{margin:0 0 10px;font-size:14px;color:var(--dim);font-weight:600}
+.stat{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--line);font-size:14px}
+.stat:last-child{border:0}
+.stat .k{color:var(--dim)}
+.badge{padding:3px 12px;border-radius:999px;font-size:12.5px}
+.b-ok{background:#173622;color:var(--ok)} .b-warn{background:#3a2f14;color:var(--warn)} .b-err{background:#3a1717;color:var(--err)}
+/* ---------- telegram-style login wizard ---------- */
+.wiz{max-width:420px;margin:0 auto;text-align:center;padding-top:26px}
+.wiz .logo{width:86px;height:86px;border-radius:50%;background:var(--acc);margin:0 auto 16px;
+           display:flex;align-items:center;justify-content:center;font-size:42px}
+.wiz h2{margin:0 0 8px;font-size:20px}
+.wiz .sub{color:var(--dim);font-size:13.5px;line-height:1.7;margin-bottom:22px}
+.tg-input{width:100%;background:var(--panel2);border:1.5px solid transparent;border-radius:10px;
+          padding:13px 14px;color:var(--fg);font-size:16px;text-align:center;direction:ltr;outline:none;margin-bottom:10px}
+.tg-input:focus{border-color:var(--acc)}
+.tg-input.err{border-color:var(--err)}
+.tg-btn{width:100%;background:var(--acc);color:#fff;padding:13px;font-size:15.5px;font-weight:600;border-radius:10px;margin-top:4px}
+.tg-btn:disabled{opacity:.5;cursor:default}
+.wiz .msg{min-height:20px;font-size:13px;margin-top:10px}
+.wiz .msg.err{color:var(--err)} .wiz .msg.ok{color:var(--ok)}
+.wiz .hint{color:var(--dim);font-size:12.5px;margin-top:14px;line-height:1.8}
+.code-big{font-size:22px;letter-spacing:8px;text-align:center}
+/* ---------- chats ---------- */
+.chat{display:flex;gap:10px;padding:11px 6px;border-bottom:1px solid var(--line);align-items:center}
+.chat:last-child{border:0}
+.avat{width:44px;height:44px;border-radius:50%;background:var(--acc2);display:flex;align-items:center;
+      justify-content:center;font-weight:700;flex-shrink:0;color:#fff}
+.chat .t{flex:1;min-width:0}
+.chat .t .ttl{font-weight:600;font-size:14.5px}
+.chat .t .last{color:var(--dim);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chat .unread{background:var(--acc);color:#fff;border-radius:999px;font-size:12px;padding:2px 8px}
+/* ---------- logs ---------- */
+#logBox{max-height:56vh;overflow:auto;background:#0e161e;border-radius:10px;padding:10px;
+        font-family:monospace;font-size:12px;direction:ltr;text-align:left;white-space:pre-wrap}
+#logBox .e{color:var(--err)}
+/* ---------- generic ---------- */
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.btn{background:var(--panel2);color:var(--fg);padding:9px 16px;font-size:14px}
+.btn.danger{background:#4a1d1d;color:#ff9c9c}
+.btn.accent{background:var(--acc);color:#fff}
+input.std{background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:10px 12px;
+          color:var(--fg);font-size:14px;width:100%;direction:ltr;text-align:left}
+.toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:#2b3a4a;color:#fff;
+       padding:10px 18px;border-radius:10px;font-size:13.5px;z-index:50;display:none;max-width:88vw}
+.spin{display:inline-block;width:15px;height:15px;border:2px solid #fff5;border-top-color:#fff;
+      border-radius:50%;animation:r 0.7s linear infinite;vertical-align:-3px;margin-inline-start:6px}
+@keyframes r{to{transform:rotate(360deg)}}
+@media(min-width:700px){ .page{padding-top:22px} }
 </style>
 </head>
 <body>
-<h1>🛠 داشبورد مدیریت</h1>
-<div id="loginCard" class="card">
-  <div class="lbl">ورود مدیر</div>
-  <input id="user" placeholder="user" autocapitalize="none" autocorrect="off" spellcheck="false" autocomplete="off" dir="ltr">
-  <input id="pass" type="password" placeholder="password" autocapitalize="none" autocorrect="off" spellcheck="false" autocomplete="off" dir="ltr">
-  <button onclick="login()">ورود</button>
-  <span id="loginMsg" class="lbl"></span>
+
+<header id="hdr">
+  <button id="burger" onclick="toggleMenu(true)">☰</button>
+  <div id="hdrTitle">داشبورد</div>
+  <div id="hdrState"><span class="dot err"></span></div>
+</header>
+
+<div id="drawer">
+  <div id="scrim" onclick="toggleMenu(false)"></div>
+  <nav id="menu">
+    <button class="mi" data-page="home"   onclick="go('home')">🏠 خانه</button>
+    <button class="mi" data-page="login"  onclick="go('login')">🔑 ورود تلگرام</button>
+    <button class="mi" data-page="chats"  onclick="go('chats')">💬 چت‌ها</button>
+    <button class="mi" data-page="logs"   onclick="go('logs')">📋 لاگ‌ها</button>
+    <button class="mi" data-page="settings" onclick="go('settings')">⚙️ تنظیمات</button>
+    <div class="spacer"></div>
+    <div class="who" id="menuWho">—</div>
+    <button class="mi" onclick="logoutAdmin()">🚪 خروج از داشبورد</button>
+  </nav>
 </div>
 
+<!-- ================= LOGIN (admin) ================= -->
+<div id="loginGate" class="wiz" style="display:none">
+  <div class="logo">🛡️</div>
+  <h2>ورود مدیر</h2>
+  <div class="sub">برای دسترسی به داشبورد، رمز مدیر را وارد کنید</div>
+  <input id="adUser" class="tg-input" placeholder="user" autocapitalize="none" autocorrect="off" spellcheck="false" autocomplete="off" value="admin">
+  <input id="adPass" class="tg-input" type="password" placeholder="password" autocapitalize="none" autocorrect="off" spellcheck="false" autocomplete="off">
+  <button class="tg-btn" onclick="adminLogin()">ورود</button>
+  <div class="msg" id="adMsg"></div>
+</div>
+
+<!-- ================= APP ================= -->
 <div id="app" style="display:none">
-  <div class="card" id="statusGrid">در حال بارگذاری…</div>
 
-  <div class="card">
-    <div class="lbl">کنترل TDLib</div>
-    <div class="row">
-      <button onclick="act('/td/start')">Start</button>
-      <button class="ghost" onclick="act('/td/restart')">Restart</button>
-      <button class="err" onclick="if(confirm('سشن تلگرام پاک می‌شود. مطمئن؟'))act('/td/logout')">Logout (پاک کردن سشن)</button>
+  <!-- HOME -->
+  <section class="page" id="page-home">
+    <div class="card">
+      <h3>وضعیت سشن تلگرام</h3>
+      <div class="stat"><span class="k">وضعیت</span><span id="stState">—</span></div>
+      <div class="stat"><span class="k">اکانت</span><span id="stMe">—</span></div>
+      <div class="stat"><span class="k">چت‌ها</span><span id="stChats">—</span></div>
+      <div class="stat"><span class="k">ناخوانده</span><span id="stUnread">—</span></div>
+      <div class="stat"><span class="k">حافظهٔ پروسه</span><span id="stRss">—</span></div>
+      <div class="stat"><span class="k">Uptime</span><span id="stUp">—</span></div>
     </div>
-  </div>
+    <div class="card" id="homeHint" style="display:none">
+      <h3>شروع</h3>
+      <div style="line-height:2">سشن تلگرام ساخته نشده است.</div>
+      <button class="btn accent" onclick="go('login')">ورود به تلگرام ←</button>
+    </div>
+  </section>
 
-  <div class="card" id="authCard">
-    <div class="lbl">ورود تلگرام (فقط وقتی state نیاز دارد)</div>
-    <div class="row"><input id="phone" placeholder="+98912…"><button onclick="authPost('/auth/phone','phone')">ارسال شماره</button></div>
-    <div class="row"><input id="code" placeholder="کد تایید"><button onclick="authPost('/auth/code','code')">ارسال کد</button></div>
-    <div class="row"><input id="password" type="password" placeholder="رمز 2FA"><button onclick="authPost('/auth/password','password')">ارسال رمز</button></div>
-  </div>
+  <!-- LOGIN WIZARD (telegram-style) -->
+  <section class="page" id="page-login">
+    <div class="wiz" id="wizPhone">
+      <div class="logo">✈️</div>
+      <h2>شمارهٔ خود را وارد کنید</h2>
+      <div class="sub">لطفاً شمارهٔ کشور خود را به همراه کد کشور وارد کنید.</div>
+      <input id="wPhone" class="tg-input" placeholder="+98 912 345 6789" inputmode="tel" autocomplete="tel" autocapitalize="none" spellcheck="false" dir="ltr">
+      <button id="wPhoneBtn" class="tg-btn" onclick="wizPhone()">ارسال کد</button>
+      <div class="msg" id="wPhoneMsg"></div>
+      <div class="hint">کد تأیید به تلگرام همین اکانت ارسال می‌شود.<br>سشن روی سرور ساخته می‌شود — روی این گوشی ذخیره نمی‌شود.</div>
+    </div>
 
-  <div class="card">
-    <div class="lbl">لاگ زنده (آخرین ۲۰۰ خط — هر ۲ ثانیه رفرش)</div>
-    <div id="logs"></div>
-  </div>
+    <div class="wiz" id="wizCode" style="display:none">
+      <div class="logo">🔢</div>
+      <h2>کد تأیید</h2>
+      <div class="sub" id="wCodeSub">کد ۵ رقمی ارسال‌شده را وارد کنید.</div>
+      <input id="wCode" class="tg-input code-big" placeholder="•••••" inputmode="numeric" maxlength="6" autocapitalize="none" spellcheck="false" dir="ltr">
+      <button id="wCodeBtn" class="tg-btn" onclick="wizCode()">ادامه</button>
+      <div class="msg" id="wCodeMsg"></div>
+      <div class="hint"><a href="#" onclick="wizReset();return false" style="color:var(--acc)">تغییر شماره</a></div>
+    </div>
 
-  <div class="card">
-    <div class="lbl">Activity log</div>
-    <div id="activity" style="font-size:.8rem;color:var(--dim)"></div>
-  </div>
+    <div class="wiz" id="wizPass" style="display:none">
+      <div class="logo">🔒</div>
+      <h2>رمز دو مرحله‌ای</h2>
+      <div class="sub">این اکانت رمز دو مرحله‌ای دارد. رمز خود را وارد کنید.</div>
+      <input id="wPass" class="tg-input" type="password" placeholder="رمز 2FA" autocapitalize="none" autocorrect="off" spellcheck="false" autocomplete="off" dir="ltr">
+      <button id="wPassBtn" class="tg-btn" onclick="wizPass()">تأیید</button>
+      <div class="msg" id="wPassMsg"></div>
+    </div>
 
-  <div class="row"><button class="ghost" onclick="logoutAdmin()">خروج از داشبورد</button></div>
+    <div class="wiz" id="wizDone" style="display:none">
+      <div class="logo" style="background:var(--ok)">✓</div>
+      <h2>سشن ساخته شد</h2>
+      <div class="sub" id="wDoneSub">اکانت با موفقیت وصل شد.</div>
+      <button class="tg-btn" onclick="go('home')">رفتن به خانه</button>
+    </div>
+  </section>
+
+  <!-- CHATS -->
+  <section class="page" id="page-chats">
+    <div class="card">
+      <h3>چت‌ها <button class="btn" style="float:left;padding:4px 12px" onclick="loadChats()">↻</button></h3>
+      <div id="chatList">—</div>
+    </div>
+  </section>
+
+  <!-- LOGS -->
+  <section class="page" id="page-logs">
+    <div class="card">
+      <h3>لاگ سیستم <button class="btn" style="float:left;padding:4px 12px" onclick="loadLogs()">↻</button></h3>
+      <div id="logBox">—</div>
+    </div>
+    <div class="card">
+      <h3>Activity</h3>
+      <div id="actBox" style="font-size:12.5px;color:var(--dim);max-height:24vh;overflow:auto;direction:ltr;text-align:left">—</div>
+    </div>
+  </section>
+
+  <!-- SETTINGS -->
+  <section class="page" id="page-settings">
+    <div class="card">
+      <h3>کنترل TDLib</h3>
+      <div class="row">
+        <button class="btn" onclick="act('/td/start')">Start</button>
+        <button class="btn" onclick="act('/td/restart')">Restart</button>
+        <button class="btn danger" onclick="if(confirm('سشن تلگرام کامل پاک می‌شود. مطمئن هستید؟'))act('/td/logout')">خروج و پاک‌کردن سشن</button>
+      </div>
+    </div>
+    <div class="card">
+      <h3>پشتیبان‌گیری سشن</h3>
+      <div style="color:var(--dim);font-size:13px;line-height:1.9;margin-bottom:10px">
+        آرشیو کامل دیتابیس TDLib (معادل لاگین اکانت). فایل را جایی امن نگه دارید.
+      </div>
+      <a href="/admin/backup" download><button class="btn accent">دانلود بکاپ (ZIP)</button></a>
+    </div>
+    <div class="card">
+      <h3>سشن‌های داشبورد</h3>
+      <div id="sessList">—</div>
+      <button class="btn danger" style="margin-top:8px" onclick="revokeOthers()">بستن بقیهٔ سشن‌ها</button>
+    </div>
+    <div class="card">
+      <h3>محیط (env)</h3>
+      <div id="envGrid">—</div>
+    </div>
+  </section>
+
 </div>
+
+<div class="toast" id="toast"></div>
 
 <script>
-let SID=localStorage.getItem('adminSid')||'';
-async function api(path,opts={}){const r=await fetch('/admin'+path,{...opts,headers:{'content-type':'application/json','x-admin-session':SID,...(opts.headers||{})}});if(r.status===401&&path!=='/login'){showLogin();throw new Error('unauthorized')}const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.error||r.status);return j}
-function showLogin(){document.getElementById('loginCard').style.display='';document.getElementById('app').style.display='none'}
-function showApp(){document.getElementById('loginCard').style.display='none';document.getElementById('app').style.display='';refresh()}
-async function login(){try{const j=await api('/login',{method:'POST',body:JSON.stringify({user:document.getElementById('user').value,password:document.getElementById('pass').value})});SID=j.sid;localStorage.setItem('adminSid',SID);showApp()}catch(e){document.getElementById('loginMsg').textContent=e.message}}
-async function logoutAdmin(){await api('/logout',{method:'POST'});localStorage.removeItem('adminSid');SID='';showLogin()}
-async function act(p){try{await api(p,{method:'POST'});refresh()}catch(e){alert(e.message)}}
-async function authPost(p,field){try{await api(p,{method:'POST',body:JSON.stringify({[field]:document.getElementById(field).value})});refresh()}catch(e){alert(e.message)}}
-const stateBadge=s=>({ready:'b-ok',need_phone:'b-warn',need_code:'b-warn',need_password:'b-warn',init:'b-warn',closed:'b-err','not-started':'b-err'}[s]||'b-warn');
-async function refresh(){try{
-  const st=await api('/status');
-  const env=st.env;
-  document.getElementById('statusGrid').innerHTML=`
-   <div><span class="badge ${stateBadge(st.tdState)}">${st.tdState}</span>
-   ${st.me?` — <b>${(st.me.first_name||'')} ${st.me.last_name||''}</b> (${st.me.phone_number||''})`:''}</div>
-   <div class="lbl">API_ID: ${env.API_ID} · API_HASH: ${env.API_HASH} · CLIENT_TOKEN: ${env.CLIENT_TOKEN}</div>
-   <div class="lbl">${env.ADMIN_PASSWORD_HASH}</div>
-   <div class="lbl">pid ${st.process.pid} · uptime ${st.process.uptimeSec}s · RSS ${st.process.rssMB}MB · heap ${st.process.heapMB}MB</div>`;
-  const lg=await api('/logs?n=200');
-  document.getElementById('logs').textContent=lg.logs.map(l=>`[${l.ts}] ${l.msg}`).join('\n');
-  const ac=await api('/activity');
-  document.getElementById('activity').textContent=ac.activity.map(a=>`${a.ts} — ${a.ip} — ${a.action}`).join('\n');
-}catch(e){console.warn(e)}}
-setInterval(()=>{if(SID&&document.getElementById('app').style.display!=='none')refresh()},2000);
-if(SID){api('/status').then(showApp).catch(showLogin)}else{showLogin()}
+let SID = localStorage.getItem('adminSid') || '';
+let PAGE = 'home';
+let logsTimer = null;
+
+/* ---------- helpers ---------- */
+const $ = id => document.getElementById(id);
+function toast(m){ const t=$('toast'); t.textContent=m; t.style.display='block'; setTimeout(()=>t.style.display='none',3200); }
+async function api(path, opts={}){
+  const r = await fetch('/admin'+path, {...opts, headers:{'content-type':'application/json','x-admin-session':SID, ...(opts.headers||{})}});
+  if (r.status===401 && path!=='/login'){ showGate(); throw new Error('unauthorized'); }
+  const j = await r.json().catch(()=>({}));
+  if (!r.ok) throw new Error(j.error || ('HTTP '+r.status));
+  return j;
+}
+async function busy(btn, fn){
+  const old = btn.textContent; btn.disabled=true; btn.innerHTML = old+'<span class="spin"></span>';
+  try { return await fn(); } finally { btn.disabled=false; btn.textContent=old; }
+}
+const STATE_FA = {ready:'وصل', need_phone:'نیاز به شماره', need_code:'نیاز به کد', need_password:'نیاز به رمز 2FA',
+                   init:'در حال راه‌اندازی', closed:'بسته', 'not-started':'شروع نشده', logging_out:'در حال خروج'};
+function stateBadge(s){ return {ready:'b-ok', need_phone:'b-warn', need_code:'b-warn', need_password:'b-warn', init:'b-warn', closed:'b-err','not-started':'b-err', logging_out:'b-warn'}[s]||'b-warn'; }
+function stateDot(s){ return {ready:'ok', need_phone:'warn', need_code:'warn', need_password:'warn', init:'warn', closed:'err','not-started':'err', logging_out:'warn'}[s]||'warn'; }
+
+/* ---------- gate / menu / navigation ---------- */
+function showGate(){ $('loginGate').style.display='block'; $('app').style.display='none'; }
+function showApp(){ $('loginGate').style.display='none'; $('app').style.display='block'; go(PAGE); refreshHdr(); }
+function toggleMenu(open){ $('drawer').classList.toggle('open', open); }
+async function adminLogin(){
+  const b=$('adMsg'); b.className='msg'; b.textContent='';
+  try{
+    await busy($('adUser').parentNode.querySelector('button') || event.target, async()=>{
+      const j = await api('/login', {method:'POST', body:JSON.stringify({user:$('adUser').value, password:$('adPass').value})});
+      SID=j.sid; localStorage.setItem('adminSid',SID); $('adPass').value=''; showApp();
+    });
+  }catch(e){ b.className='msg err'; b.textContent = e.message==='unauthorized'?'':e.message; }
+}
+function logoutAdmin(){ api('/logout',{method:'POST'}).catch(()=>{}); localStorage.removeItem('adminSid'); SID=''; toggleMenu(false); showGate(); }
+function go(p){
+  PAGE=p; toggleMenu(false);
+  document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));
+  $('page-'+p).classList.add('active');
+  document.querySelectorAll('#menu .mi').forEach(x=>x.classList.toggle('active', x.dataset.page===p));
+  $('hdrTitle').textContent = {home:'خانه', login:'ورود تلگرام', chats:'چت‌ها', logs:'لاگ‌ها', settings:'تنظیمات'}[p];
+  if (p==='home') loadHome();
+  if (p==='login') wizSync();
+  if (p==='chats') loadChats();
+  if (p==='logs'){ loadLogs(); clearInterval(logsTimer); logsTimer=setInterval(loadLogs, 3000); }
+  else clearInterval(logsTimer);
+  if (p==='settings') loadSettings();
+}
+function refreshHdr(){ api('/status').then(st=>{ $('hdrState').innerHTML = `<span class="dot ${stateDot(st.tdState)}"></span>`; $('menuWho').textContent = st.me ? (st.me.first_name||'')+' '+(st.me.phone_number||'') : 'اکانت وصل نیست'; }).catch(()=>{}); }
+
+/* ---------- home ---------- */
+async function loadHome(){
+  try{
+    const st = await api('/status');
+    $('stState').innerHTML = `<span class="badge ${stateBadge(st.tdState)}">${STATE_FA[st.tdState]||st.tdState}</span>`;
+    $('stRss').textContent = st.process.rssMB+' MB';
+    $('stUp').textContent = Math.floor(st.process.uptimeSec/60)+' دقیقه';
+    $('homeHint').style.display = (st.tdState==='ready') ? 'none' : 'block';
+    if (st.tdState==='ready'){
+      const me = await api('/me');
+      $('stMe').textContent = me.me ? `${me.me.first_name||''} ${me.me.last_name||''} (${me.me.phone_number||''})` : '—';
+      $('stChats').textContent = me.chats ?? '—';
+      $('stUnread').textContent = me.unread ?? '—';
+    } else { $('stMe').textContent='—'; $('stChats').textContent='—'; $('stUnread').textContent='—'; }
+    refreshHdr();
+  }catch(e){}
+}
+
+/* ---------- telegram login wizard ---------- */
+let wizTimer=null;
+function wizShow(id){ ['wizPhone','wizCode','wizPass','wizDone'].forEach(w=>$(''+w).style.display = (w===id?'block':'none')); }
+async function wizSync(){
+  // align the wizard with the actual TDLib state
+  try{
+    const st = await api('/status');
+    const s = st.tdState;
+    if (s==='ready'){ $('wDoneSub').textContent = st.me? `وصل شد به‌عنوان ${(st.me.first_name||'')} (${st.me.phone_number||''})`:'وصل شد.'; return wizShow('wizDone'); }
+    if (s==='need_code') return wizShow('wizCode');
+    if (s==='need_password') return wizShow('wizPass');
+    if (s==='need_phone' || s==='not-started' || s==='closed' || s==='init'){ wizShow('wizPhone'); if(s==='not-started'||s==='closed'){ try{await api('/td/start',{method:'POST'})}catch(e){} } return; }
+    wizShow('wizPhone');
+  }catch(e){}
+}
+async function wizPhone(){
+  const btn=$('wPhoneBtn');
+  try{
+    await busy(btn, async()=>{
+      await api('/auth/phone', {method:'POST', body:JSON.stringify({phone:$('wPhone').value.replace(/[^\d+]/g,'')})});
+    });
+    $('wPhoneMsg').className='msg ok'; $('wPhoneMsg').textContent='کد ارسال شد…';
+    setTimeout(()=>{ wizShow('wizCode'); $('wCode').focus(); }, 400);
+  }catch(e){
+    const m=$('wPhoneMsg'); m.className='msg err';
+    m.textContent = /PHONE_(NUMBER_)?INVALID|PHONE_NUMBER_BANNED/.test(e.message) ? 'شماره نامعتبر است.' :
+                    /FLOOD/.test(e.message) ? 'تلاش زیاد؛ چند دقیقه صبر کنید.' : e.message;
+  }
+}
+async function wizCode(){
+  const btn=$('wCodeBtn');
+  try{
+    await busy(btn, async()=>{ await api('/auth/code', {method:'POST', body:JSON.stringify({code:$('wCode').value.trim()})}); });
+    // state will move to need_password or ready — poll once
+    const st = await api('/status');
+    if (st.tdState==='need_password') { wizShow('wizPass'); $('wPass').focus(); }
+    else if (st.tdState==='ready'){ $('wDoneSub').textContent='وصل شد.'; wizShow('wizDone'); refreshHdr(); }
+    else { wizSync(); }
+  }catch(e){
+    const m=$('wCodeMsg'); m.className='msg err';
+    m.textContent = /PHONE_CODE_(INVALID|EXPIRED)/.test(e.message) ? 'کد اشتباه یا منقضی است.' : e.message;
+    $('wCode').classList.add('err'); setTimeout(()=>$('wCode').classList.remove('err'),900);
+  }
+}
+async function wizPass(){
+  const btn=$('wPassBtn');
+  try{
+    await busy(btn, async()=>{ await api('/auth/password', {method:'POST', body:JSON.stringify({password:$('wPass').value})}); });
+    $('wDoneSub').textContent='وصل شد.'; wizShow('wizDone'); refreshHdr();
+  }catch(e){
+    const m=$('wPassMsg'); m.className='msg err';
+    m.textContent = /PASSWORD_(HASH_)?INVALID/.test(e.message) ? 'رمز اشتباه است.' : e.message;
+  }
+}
+function wizReset(){ fetch('/admin/td/restart',{method:'POST',headers:{'x-admin-session':SID}}).finally(()=>setTimeout(wizSync,600)); }
+
+/* ---------- chats ---------- */
+async function loadChats(){
+  try{
+    const j = await api('/chats?limit=30');
+    if (!j.count){ $('chatList').textContent='چتی نیست.'; return; }
+    $('chatList').innerHTML = j.chats.map(c=>{
+      const ini=(c.title||'?').slice(0,1).toUpperCase();
+      return `<div class="chat"><div class="avat">${ini}</div>
+        <div class="t"><div class="ttl">${esc(c.title||'—')}</div><div class="last">${esc(c.last||'')}</div></div>
+        ${c.unread?`<span class="unread">${c.unread}</span>`:''}</div>`;
+    }).join('');
+  }catch(e){ $('chatList').innerHTML = `<div style="color:var(--dim);padding:8px">${esc(e.message)}</div>`; }
+}
+function esc(s){ return String(s).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+
+/* ---------- logs ---------- */
+async function loadLogs(){
+  try{
+    const j = await api('/logs?n=200');
+    $('logBox').innerHTML = j.logs.map(l=>`<div class="${l.level==='error'?'e':''}">[${l.ts.slice(11,19)}] ${esc(l.msg)}</div>`).join('');
+    const a = await api('/activity');
+    $('actBox').textContent = a.activity.slice(-40).map(x=>`${x.ts.slice(11,19)}  ${x.ip}  ${x.action}`).join('\n');
+  }catch(e){}
+}
+
+/* ---------- settings ---------- */
+async function loadSettings(){
+  try{
+    const st = await api('/status');
+    $('envGrid').innerHTML = Object.entries(st.env).map(([k,v])=>
+      `<div class="stat"><span class="k">${k}</span><span>${esc(v)}</span></div>`).join('');
+    const s = await api('/sessions');
+    $('sessList').innerHTML = s.sessions.length? s.sessions.map(x=>
+      `<div class="stat"><span class="k">${x.sid}</span><span>${x.expires_in_min} دقیقه مانده <button class="btn" style="padding:2px 10px;font-size:12px" onclick="revoke('${x.sid}')">بستن</button></span></div>`).join('')
+      : 'سپشنی وجود ندارد';
+  }catch(e){}
+}
+async function revoke(sid){ try{ await api('/sessions/revoke',{method:'POST',body:JSON.stringify({sid})}); loadSettings(); toast('سشن بسته شد'); }catch(e){ toast(e.message);} }
+async function revokeOthers(){ try{ await api('/sessions/revoke-others',{method:'POST'}); loadSettings(); toast('بقیهٔ سشن‌ها بسته شدند'); }catch(e){ toast(e.message);} }
+async function act(p){ try{ await busy(event.target, async()=>{ await api(p,{method:'POST'}); }); toast('انجام شد'); refreshHdr(); if(PAGE==='home')loadHome(); }catch(e){ toast(e.message);} }
+
+/* ---------- boot ---------- */
+(async function(){
+  if (!SID) return showGate();
+  try { await api('/status'); showApp(); } catch(e){ if(e.message!=='unauthorized') showApp(); }
+})();
+setInterval(refreshHdr, 8000);
 </script>
 </body>
 </html>
