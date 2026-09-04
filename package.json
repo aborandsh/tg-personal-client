@@ -1,0 +1,19 @@
+{
+  "name": "tg-personal-client",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Personal Telegram client: Railway backend (TDLib) + REST/WS API + admin dashboard",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "test": "node src/index.test.js && node src/index.test2.js",
+    "smoke": "node smoke.js"
+  },
+  "dependencies": {
+    "express": "^5.1.0",
+    "multer": "^2.0.2",
+    "prebuilt-tdlib": "^0.1008067.0",
+    "tdl": "^8.1.0",
+    "ws": "^8.19.0"
+  }
+}

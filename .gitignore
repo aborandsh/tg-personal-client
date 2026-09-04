@@ -1,0 +1,6 @@
+node_modules/
+.env
+td-test/ td-smoke/ td-itest/
+fd-test/ fd-smoke/ fd-itest/
+/data
+*.log

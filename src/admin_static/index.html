@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TG Client — Admin</title>
+<style>
+:root{--bg:#0f1420;--card:#171e2e;--fg:#e8ecf4;--dim:#8b95a9;--acc:#4f8cff;--ok:#37c977;--warn:#ffb02e;--err:#ff5d5d}
+*{box-sizing:border-box}body{background:var(--bg);color:var(--fg);font-family:Vazirmatn,Tahoma,sans-serif;margin:0;padding:16px}
+h1{font-size:1.2rem;margin:0 0 12px}.card{background:var(--card);border-radius:12px;padding:14px;margin-bottom:12px}
+button{background:var(--acc);color:#fff;border:0;border-radius:8px;padding:8px 14px;margin:2px;cursor:pointer;font-family:inherit}
+button.warn{background:var(--warn);color:#000}button.err{background:var(--err)}button.ghost{background:#2a3247}
+input{background:#0c111c;border:1px solid #2a3247;color:var(--fg);border-radius:8px;padding:8px;width:100%;margin:4px 0;font-family:inherit}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.lbl{color:var(--dim);font-size:.85rem}
+.badge{padding:2px 10px;border-radius:999px;font-size:.8rem}.b-ok{background:#103b26;color:var(--ok)}.b-warn{background:#3d2e10;color:var(--warn)}.b-err{background:#3d1515;color:var(--err)}
+#logs{max-height:260px;overflow:auto;background:#0c111c;border-radius:8px;padding:8px;font-family:monospace;font-size:.75rem;direction:ltr;text-align:left;white-space:pre-wrap}
+#statusGrid div{margin:3px 0}
+@media(max-width:600px){#logs{max-height:180px}}
+</style>
+</head>
+<body>
+<h1>🛠 داشبورد مدیریت</h1>
+<div id="loginCard" class="card">
+  <div class="lbl">ورود مدیر</div>
+  <input id="user" placeholder="user">
+  <input id="pass" type="password" placeholder="password">
+  <button onclick="login()">ورود</button>
+  <span id="loginMsg" class="lbl"></span>
+</div>
+
+<div id="app" style="display:none">
+  <div class="card" id="statusGrid">در حال بارگذاری…</div>
+
+  <div class="card">
+    <div class="lbl">کنترل TDLib</div>
+    <div class="row">
+      <button onclick="act('/td/start')">Start</button>
+      <button class="ghost" onclick="act('/td/restart')">Restart</button>
+      <button class="err" onclick="if(confirm('سشن تلگرام پاک می‌شود. مطمئن؟'))act('/td/logout')">Logout (پاک کردن سشن)</button>
+    </div>
+  </div>
+
+  <div class="card" id="authCard">
+    <div class="lbl">ورود تلگرام (فقط وقتی state نیاز دارد)</div>
+    <div class="row"><input id="phone" placeholder="+98912…"><button onclick="authPost('/auth/phone','phone')">ارسال شماره</button></div>
+    <div class="row"><input id="code" placeholder="کد تایید"><button onclick="authPost('/auth/code','code')">ارسال کد</button></div>
+    <div class="row"><input id="password" type="password" placeholder="رمز 2FA"><button onclick="authPost('/auth/password','password')">ارسال رمز</button></div>
+  </div>
+
+  <div class="card">
+    <div class="lbl">لاگ زنده (آخرین ۲۰۰ خط — هر ۲ ثانیه رفرش)</div>
+    <div id="logs"></div>
+  </div>
+
+  <div class="card">
+    <div class="lbl">Activity log</div>
+    <div id="activity" style="font-size:.8rem;color:var(--dim)"></div>
+  </div>
+
+  <div class="row"><button class="ghost" onclick="logoutAdmin()">خروج از داشبورد</button></div>
+</div>
+
+<script>
+let SID=localStorage.getItem('adminSid')||'';
+async function api(path,opts={}){const r=await fetch('/admin'+path,{...opts,headers:{'content-type':'application/json','x-admin-session':SID,...(opts.headers||{})}});if(r.status===401&&path!=='/login'){showLogin();throw new Error('unauthorized')}const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.error||r.status);return j}
+function showLogin(){document.getElementById('loginCard').style.display='';document.getElementById('app').style.display='none'}
+function showApp(){document.getElementById('loginCard').style.display='none';document.getElementById('app').style.display='';refresh()}
+async function login(){try{const j=await api('/login',{method:'POST',body:JSON.stringify({user:u.value,password:pass.value})});SID=j.sid;localStorage.setItem('adminSid',SID);showApp()}catch(e){document.getElementById('loginMsg').textContent=e.message}}
+async function logoutAdmin(){await api('/logout',{method:'POST'});localStorage.removeItem('adminSid');SID='';showLogin()}
+async function act(p){try{await api(p,{method:'POST'});refresh()}catch(e){alert(e.message)}}
+async function authPost(p,field){try{await api(p,{method:'POST',body:JSON.stringify({[field]:document.getElementById(field).value})});refresh()}catch(e){alert(e.message)}}
+const stateBadge=s=>({ready:'b-ok',need_phone:'b-warn',need_code:'b-warn',need_password:'b-warn',init:'b-warn',closed:'b-err','not-started':'b-err'}[s]||'b-warn');
+async function refresh(){try{
+  const st=await api('/status');
+  const env=st.env;
+  document.getElementById('statusGrid').innerHTML=`
+   <div><span class="badge ${stateBadge(st.tdState)}">${st.tdState}</span>
+   ${st.me?` — <b>${(st.me.first_name||'')} ${st.me.last_name||''}</b> (${st.me.phone_number||''})`:''}</div>
+   <div class="lbl">API_ID: ${env.API_ID} · API_HASH: ${env.API_HASH} · CLIENT_TOKEN: ${env.CLIENT_TOKEN}</div>
+   <div class="lbl">${env.ADMIN_PASSWORD_HASH}</div>
+   <div class="lbl">pid ${st.process.pid} · uptime ${st.process.uptimeSec}s · RSS ${st.process.rssMB}MB · heap ${st.process.heapMB}MB</div>`;
+  const lg=await api('/logs?n=200');
+  document.getElementById('logs').textContent=lg.logs.map(l=>`[${l.ts}] ${l.msg}`).join('\n');
+  const ac=await api('/activity');
+  document.getElementById('activity').textContent=ac.activity.map(a=>`${a.ts} — ${a.ip} — ${a.action}`).join('\n');
+}catch(e){console.warn(e)}}
+setInterval(()=>{if(SID&&document.getElementById('app').style.display!=='none')refresh()},2000);
+if(SID){api('/status').then(showApp).catch(showLogin)}else{showLogin()}
+</script>
+</body>
+</html>
