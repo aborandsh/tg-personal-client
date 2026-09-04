@@ -52,13 +52,38 @@ module.exports = function makeAdmin({ getTd, startTd, envStatus, broadcastWS, lo
     });
   });
 
+  // ---------- message view helpers (shared by chat endpoints) ----------
+  function msgView(m) {
+    const c = m.content || {};
+    let kind = 'text', text = '';
+    if (c._ === 'messageText') { kind = 'text'; text = c.text ? c.text.text : ''; }
+    else if (c._ === 'messagePhoto') { kind = 'photo'; text = c.caption ? c.caption.text : ''; }
+    else if (c._ === 'messageVoiceNote') { kind = 'voice'; }
+    else if (c._ === 'messageDocument') { kind = 'file'; text = c.document && c.document.file_name || ''; }
+    else if (c._ === 'messageSticker') { kind = 'sticker'; }
+    else if (c._ === 'messageAnimation') { kind = 'gif'; }
+    else { kind = 'other'; }
+    const sid = m.sender_id || {};
+    const sender = sid.user_id || (sid.chat_id ? -sid.chat_id : 0);
+    return {
+      id: m.id, kind, text: (text || '').slice(0, 800),
+      out: m.is_outgoing === true,
+      date: m.date || 0,
+      sender_id: sender,
+      edited: m.edit_date ? true : false,
+    };
+  }
+  function mediaLabel(kind) {
+    return { photo: '🖼 عکس', voice: '🎙 ویس', file: '📎 فایل', sticker: '🎨 استیکر', gif: '🎞 GIF', other: 'پیام' }[kind] || 'پیام';
+  }
+
   // account summary for the home page (chats count, unread)
   router.get('/me', async (req, res) => {
     const td = getTd();
     if (!td) return res.status(503).json({ error: 'tdlib not started' });
     if (td.state !== 'ready') return res.json({ ready: false, state: td.state });
     try {
-      const chats = await td.invoke({ _: 'getChats', chat_list: { _: 'chatListMain' }, limit_chat_ids: 100 });
+      const chats = await td.invoke({ _: 'getChats', chat_list: { _: 'chatListMain' }, limit: 100 });
       let total_unread = 0;
       for (const id of (chats.chat_ids || []).slice(0, 50)) {
         try { const c = await td.invoke({ _: 'getChat', chat_id: id }); total_unread += c.unread_count || 0; } catch { /* skip */ }
@@ -69,26 +94,74 @@ module.exports = function makeAdmin({ getTd, startTd, envStatus, broadcastWS, lo
     }
   });
 
-  // quick chat list (home page preview)
+  // quick chat list (telegram-web-style sidebar)
   router.get('/chats', async (req, res) => {
     const td = getTd();
     if (!td) return res.status(503).json({ error: 'tdlib not started' });
     if (td.state !== 'ready') return res.status(409).json({ error: `tdlib not ready (state: ${td.state})` });
     try {
-      const limit = Math.min(parseInt(req.query.limit || '20', 10) || 20, 100);
-      const r = await td.invoke({ _: 'getChats', chat_list: { _: 'chatListMain' }, limit_chat_ids: limit });
+      const limit = Math.min(parseInt(req.query.limit || '30', 10) || 30, 100);
+      const r = await td.invoke({ _: 'getChats', chat_list: { _: 'chatListMain' }, limit });
       const chats = [];
       for (const id of (r.chat_ids || [])) {
         try {
           const c = await td.invoke({ _: 'getChat', chat_id: id });
+          const lm = c.last_message ? msgView(c.last_message) : null;
           chats.push({
-            id: c.id, title: c.title, unread: c.unread_count,
-            last: c.last_message && c.last_message.content && c.last_message.content.text
-              ? (c.last_message.content.text.text || '').slice(0, 80) : '',
+            id: c.id, title: c.title || '—', unread: c.unread_count || 0,
+            last: lm ? (lm.kind === 'text' ? lm.text : mediaLabel(lm.kind)) : '',
+            last_ts: lm ? lm.date : 0,
           });
         } catch { /* skip */ }
       }
       res.json({ count: chats.length, chats });
+    } catch (e) {
+      res.status(e.status || 500).json({ error: e.message });
+    }
+  });
+
+  // messages of one chat (reading works now — TDLib 1.8 uses `limit`)
+  router.get('/chats/:id/messages', async (req, res) => {
+    const td = getTd();
+    if (!td) return res.status(503).json({ error: 'tdlib not started' });
+    if (td.state !== 'ready') return res.status(409).json({ error: `tdlib not ready (state: ${td.state})` });
+    try {
+      const chatId = Number(req.params.id);
+      const limit = Math.min(parseInt(req.query.limit || '40', 10) || 40, 100);
+      const from = parseInt(req.query.from_message_id || '0', 10) || 0;
+      const r = await td.invoke({
+        _: 'getChatHistory', chat_id: chatId,
+        from_message_id: from, offset: from ? 1 : 0, limit, only_local: false,
+      });
+      const msgs = (r.messages || []).map(msgView);
+      // resolve sender names (TDLib caches; cheap)
+      const names = {};
+      for (const m of msgs) {
+        const uid = m.sender_id;
+        if (uid > 0 && names[uid] === undefined) {
+          try { const u = await td.invoke({ _: 'getUser', user_id: uid }); names[uid] = [u.first_name, u.last_name].filter(Boolean).join(' '); }
+          catch { names[uid] = ''; }
+        }
+      }
+      res.json({ count: msgs.length, messages: msgs, names });
+    } catch (e) {
+      res.status(e.status || 500).json({ error: e.message });
+    }
+  });
+
+  // send text message from the dashboard (used to test session liveness)
+  router.post('/chats/:id/messages', async (req, res) => {
+    const td = getTd();
+    if (!td) return res.status(503).json({ error: 'tdlib not started' });
+    if (td.state !== 'ready') return res.status(409).json({ error: `tdlib not ready (state: ${td.state})` });
+    try {
+      const text = String((req.body || {}).text || '').trim();
+      if (!text) return res.status(400).json({ error: 'text required' });
+      const m = await td.invoke({
+        _: 'sendMessage', chat_id: Number(req.params.id),
+        input_message_content: { _: 'inputMessageText', text: { _: 'formattedText', text } },
+      });
+      res.json(msgView(m));
     } catch (e) {
       res.status(e.status || 500).json({ error: e.message });
     }

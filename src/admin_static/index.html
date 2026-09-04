@@ -6,87 +6,143 @@
 <title>TG Client — داشبورد</title>
 <style>
 :root{
-  --bg:#17212b; --panel:#1c2733; --panel2:#232e3c; --line:#101921;
-  --fg:#eef3f7; --dim:#7d8b99; --acc:#5288c1; --acc2:#3d6a96;
+  --bg:#17212b; --panel:#1c2733; --panel2:#232e3c; --hover:#202b36; --active:#2b5278;
+  --line:#101921; --fg:#eef3f7; --dim:#7d8b99;
+  --acc:#5288c1; --out:#2b5278; --in:#182533;
   --ok:#4fae4e; --warn:#e8a33d; --err:#e0544f;
-  --rad:12px;
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-body{background:var(--bg);color:var(--fg);margin:0;font-family:Vazirmatn,Tahoma,sans-serif;font-size:15px}
-button{font-family:inherit;cursor:pointer;border:0;border-radius:9px}
-input{font-family:inherit}
-/* ---------- header ---------- */
-#hdr{position:sticky;top:0;z-index:20;background:var(--panel);border-bottom:1px solid var(--line);
-     display:flex;align-items:center;gap:10px;padding:10px 14px}
-#burger{background:none;color:var(--fg);font-size:22px;padding:4px 8px;line-height:1}
-#hdrTitle{font-weight:700;font-size:16px;flex:1}
-#hdrState{font-size:12px;color:var(--dim)}
-.dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-inline-start:4px}
-.dot.ok{background:var(--ok)} .dot.warn{background:var(--warn)} .dot.err{background:var(--err)}
-/* ---------- drawer ---------- */
-#drawer{position:fixed;inset:0;z-index:30;display:none}
+body{background:var(--bg);color:var(--fg);margin:0;font-family:Vazirmatn,Tahoma,sans-serif;font-size:15px;height:100vh;overflow:hidden}
+button{font-family:inherit;cursor:pointer;border:0;border-radius:9px;color:var(--fg)}
+input,textarea{font-family:inherit}
+a{color:var(--acc)}
+
+/* ================= top header ================= */
+#hdr{position:fixed;inset:0 0 auto 0;height:52px;z-index:30;background:var(--panel);
+     border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px;padding:0 12px}
+#burger{background:none;font-size:21px;padding:4px 8px;line-height:1}
+#hdrTitle{font-weight:700;font-size:15.5px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%}
+.dot.ok{background:var(--ok)}.dot.warn{background:var(--warn)}.dot.err{background:var(--err)}
+#hdrRight{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--dim)}
+#hdrMe{max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* ================= drawer ================= */
+#drawer{position:fixed;inset:0;z-index:40;display:none}
 #drawer.open{display:block}
 #scrim{position:absolute;inset:0;background:rgba(0,0,0,.45)}
-#menu{position:absolute;top:0;bottom:0;right:0;width:270px;background:var(--panel);
-      padding:16px 10px;box-shadow:-6px 0 24px rgba(0,0,0,.4);display:flex;flex-direction:column;gap:2px}
-#menu .mi{display:flex;align-items:center;gap:10px;padding:11px 14px;border-radius:10px;color:var(--fg);
-          background:none;font-size:15px;text-align:right;width:100%}
-#menu .mi.active{background:var(--acc2)}
-#menu .mi:active{filter:brightness(1.2)}
+#menu{position:absolute;top:52px;bottom:0;right:0;width:280px;background:var(--panel);
+      box-shadow:-6px 0 24px rgba(0,0,0,.4);padding:12px 10px;display:flex;flex-direction:column;gap:2px}
+#menu .mi{display:flex;align-items:center;gap:10px;padding:11px 14px;border-radius:10px;
+          background:none;font-size:14.5px;text-align:right;width:100%}
+#menu .mi:hover{background:var(--hover)}
+#menu .mi.active{background:var(--active)}
 #menu .spacer{flex:1}
-#menu .who{padding:10px 14px;color:var(--dim);font-size:13px;border-top:1px solid var(--line)}
-/* ---------- pages ---------- */
-.page{display:none;padding:14px;max-width:760px;margin:0 auto}
-.page.active{display:block}
-.card{background:var(--panel);border-radius:var(--rad);padding:14px;margin-bottom:12px;border:1px solid var(--line)}
-.card h3{margin:0 0 10px;font-size:14px;color:var(--dim);font-weight:600}
+#menu .note{padding:8px 14px;color:var(--dim);font-size:12px;border-top:1px solid var(--line)}
+
+/* ================= main layout: sidebar + content ================= */
+#main{position:fixed;inset:52px 0 0 0;display:flex}
+#sidebar{width:340px;min-width:280px;background:var(--panel);border-inline-start:1px solid var(--line);
+         display:flex;flex-direction:column}
+#sideHead{padding:10px 14px;color:var(--dim);font-size:12.5px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--line)}
+#chatList{flex:1;overflow-y:auto}
+.chat{display:flex;gap:10px;padding:10px 12px;cursor:pointer;align-items:center;border-bottom:1px solid var(--line)}
+.chat:hover{background:var(--hover)}
+.chat.sel{background:var(--active)}
+.avat{width:46px;height:46px;border-radius:50%;background:var(--acc);display:flex;align-items:center;
+      justify-content:center;font-weight:700;flex-shrink:0;color:#fff;font-size:17px}
+.chat .t{flex:1;min-width:0}
+.chat .t .r1{display:flex;justify-content:space-between;gap:6px}
+.chat .t .ttl{font-weight:600;font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chat .t .ts{color:var(--dim);font-size:11px;flex-shrink:0}
+.chat .t .r2{display:flex;justify-content:space-between;gap:6px;margin-top:3px}
+.chat .t .last{color:var(--dim);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chat .unread{background:var(--acc);color:#fff;border-radius:999px;font-size:11.5px;padding:2px 8px;flex-shrink:0}
+#content{flex:1;display:flex;flex-direction:column;min-width:0}
+#emptyMsg{flex:1;display:flex;align-items:center;justify-content:center;color:var(--dim);flex-direction:column;gap:10px}
+#emptyMsg .big{font-size:44px}
+
+/* ================= chat view ================= */
+#chatHead{height:52px;background:var(--panel);border-bottom:1px solid var(--line);display:flex;
+          align-items:center;gap:10px;padding:0 14px}
+#chatHead .avat{width:38px;height:38px;font-size:15px}
+#chatTitle{font-weight:700;font-size:15px}
+#chatSub{color:var(--dim);font-size:12px}
+#msgs{flex:1;overflow-y:auto;padding:16px 18px;display:flex;flex-direction:column;gap:4px;
+      background:
+        radial-gradient(circle at 20% 20%, #1e2c3a 0%, transparent 50%),
+        radial-gradient(circle at 80% 70%, #1d2a37 0%, transparent 50%), var(--bg)}
+.bub{max-width:72%;padding:8px 12px;border-radius:14px;font-size:14.5px;line-height:1.55;
+     word-wrap:break-word;white-space:pre-wrap;position:relative;box-shadow:0 1px 1px rgba(0,0,0,.2)}
+.bub.out{align-self:flex-start;background:var(--out);border-bottom-right-radius:4px}
+.bub.in{align-self:flex-end;background:var(--in);border-bottom-left-radius:4px}
+.bub .sender{font-size:12px;color:#6ab3f3;font-weight:600;margin-bottom:2px}
+.bub .meta{font-size:10.5px;color:rgba(255,255,255,.45);text-align:left;margin-top:3px;direction:ltr}
+.bub .mediatag{color:#9fc3e8;font-style:italic}
+.daysep{align-self:center;background:rgba(0,0,0,.25);color:var(--dim);font-size:11.5px;
+        padding:3px 12px;border-radius:999px;margin:8px 0}
+#typing{height:18px;padding:0 18px;color:var(--acc);font-size:12px}
+/* composer */
+#composer{display:flex;gap:8px;padding:10px 12px;background:var(--panel);border-top:1px solid var(--line)}
+#msgInput{flex:1;background:var(--panel2);border:1px solid var(--line);border-radius:22px;
+          padding:11px 16px;color:var(--fg);font-size:14.5px;outline:none;resize:none}
+#msgInput:focus{border-color:var(--acc)}
+#sendBtn{background:var(--acc);width:44px;height:44px;border-radius:50%;font-size:17px;flex-shrink:0}
+
+/* ================= panel pages (logs/settings/home) ================= */
+.panelPage{display:none;flex:1;overflow-y:auto;padding:16px;max-width:860px;margin:0 auto;width:100%}
+.panelPage.active{display:block}
+.card{background:var(--panel);border-radius:12px;padding:14px;margin-bottom:12px;border:1px solid var(--line)}
+.card h3{margin:0 0 10px;font-size:13.5px;color:var(--dim);font-weight:600}
 .stat{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--line);font-size:14px}
 .stat:last-child{border:0}
 .stat .k{color:var(--dim)}
 .badge{padding:3px 12px;border-radius:999px;font-size:12.5px}
-.b-ok{background:#173622;color:var(--ok)} .b-warn{background:#3a2f14;color:var(--warn)} .b-err{background:#3a1717;color:var(--err)}
-/* ---------- telegram-style login wizard ---------- */
-.wiz{max-width:420px;margin:0 auto;text-align:center;padding-top:26px}
+.b-ok{background:#173622;color:var(--ok)}.b-warn{background:#3a2f14;color:var(--warn)}.b-err{background:#3a1717;color:var(--err)}
+#logBox{max-height:52vh;overflow:auto;background:#0e161e;border-radius:10px;padding:10px;
+        font-family:monospace;font-size:12px;direction:ltr;text-align:left;white-space:pre-wrap}
+#logBox .e{color:var(--err)}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.btn{background:var(--panel2);padding:9px 16px;font-size:14px}
+.btn.danger{background:#4a1d1d;color:#ff9c9c}
+.btn.accent{background:var(--acc);color:#fff}
+
+/* ================= telegram-style login wizard ================= */
+.wizWrap{flex:1;overflow-y:auto}
+.wiz{max-width:420px;margin:0 auto;text-align:center;padding-top:30px}
 .wiz .logo{width:86px;height:86px;border-radius:50%;background:var(--acc);margin:0 auto 16px;
-           display:flex;align-items:center;justify-content:center;font-size:42px}
+           display:flex;align-items:center;justify-content:center;font-size:40px}
 .wiz h2{margin:0 0 8px;font-size:20px}
-.wiz .sub{color:var(--dim);font-size:13.5px;line-height:1.7;margin-bottom:22px}
+.wiz .sub{color:var(--dim);font-size:13.5px;line-height:1.8;margin-bottom:22px}
 .tg-input{width:100%;background:var(--panel2);border:1.5px solid transparent;border-radius:10px;
           padding:13px 14px;color:var(--fg);font-size:16px;text-align:center;direction:ltr;outline:none;margin-bottom:10px}
 .tg-input:focus{border-color:var(--acc)}
 .tg-input.err{border-color:var(--err)}
 .tg-btn{width:100%;background:var(--acc);color:#fff;padding:13px;font-size:15.5px;font-weight:600;border-radius:10px;margin-top:4px}
-.tg-btn:disabled{opacity:.5;cursor:default}
 .wiz .msg{min-height:20px;font-size:13px;margin-top:10px}
-.wiz .msg.err{color:var(--err)} .wiz .msg.ok{color:var(--ok)}
-.wiz .hint{color:var(--dim);font-size:12.5px;margin-top:14px;line-height:1.8}
-.code-big{font-size:22px;letter-spacing:8px;text-align:center}
-/* ---------- chats ---------- */
-.chat{display:flex;gap:10px;padding:11px 6px;border-bottom:1px solid var(--line);align-items:center}
-.chat:last-child{border:0}
-.avat{width:44px;height:44px;border-radius:50%;background:var(--acc2);display:flex;align-items:center;
-      justify-content:center;font-weight:700;flex-shrink:0;color:#fff}
-.chat .t{flex:1;min-width:0}
-.chat .t .ttl{font-weight:600;font-size:14.5px}
-.chat .t .last{color:var(--dim);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.chat .unread{background:var(--acc);color:#fff;border-radius:999px;font-size:12px;padding:2px 8px}
-/* ---------- logs ---------- */
-#logBox{max-height:56vh;overflow:auto;background:#0e161e;border-radius:10px;padding:10px;
-        font-family:monospace;font-size:12px;direction:ltr;text-align:left;white-space:pre-wrap}
-#logBox .e{color:var(--err)}
-/* ---------- generic ---------- */
-.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-.btn{background:var(--panel2);color:var(--fg);padding:9px 16px;font-size:14px}
-.btn.danger{background:#4a1d1d;color:#ff9c9c}
-.btn.accent{background:var(--acc);color:#fff}
-input.std{background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:10px 12px;
-          color:var(--fg);font-size:14px;width:100%;direction:ltr;text-align:left}
+.wiz .msg.err{color:var(--err)}.wiz .msg.ok{color:var(--ok)}
+.wiz .hint{color:var(--dim);font-size:12.5px;margin-top:14px;line-height:1.9}
+.code-big{font-size:22px;letter-spacing:8px}
+
+/* ================= admin login gate ================= */
+#loginGate{position:fixed;inset:0;z-index:60;background:var(--bg);display:none;overflow-y:auto}
+
 .toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:#2b3a4a;color:#fff;
-       padding:10px 18px;border-radius:10px;font-size:13.5px;z-index:50;display:none;max-width:88vw}
-.spin{display:inline-block;width:15px;height:15px;border:2px solid #fff5;border-top-color:#fff;
-      border-radius:50%;animation:r 0.7s linear infinite;vertical-align:-3px;margin-inline-start:6px}
+       padding:10px 18px;border-radius:10px;font-size:13.5px;z-index:70;display:none;max-width:88vw}
+.spin{display:inline-block;width:14px;height:14px;border:2px solid #fff5;border-top-color:#fff;
+      border-radius:50%;animation:r .7s linear infinite;vertical-align:-3px;margin-inline-start:6px}
 @keyframes r{to{transform:rotate(360deg)}}
-@media(min-width:700px){ .page{padding-top:22px} }
+
+/* ================= responsive: mobile = one pane ================= */
+@media(max-width:820px){
+  #sidebar{width:100%;min-width:0}
+  #content.hideMobile, .panelPage.active{display:block}
+  body.chatOpen #sidebar{display:none}
+  body:not(.chatOpen) #content{display:none}
+  body:not(.chatOpen) .panelPage.active{display:block}
+  #backBtn{display:inline-block}
+}
+#backBtn{display:none;background:none;font-size:20px;padding:4px 8px}
 </style>
 </head>
 <body>
@@ -94,154 +150,182 @@ input.std{background:var(--panel2);border:1px solid var(--line);border-radius:9p
 <header id="hdr">
   <button id="burger" onclick="toggleMenu(true)">☰</button>
   <div id="hdrTitle">داشبورد</div>
-  <div id="hdrState"><span class="dot err"></span></div>
+  <div id="hdrRight"><span id="hdrMe">—</span><span id="hdrDot" class="dot err"></span></div>
 </header>
 
 <div id="drawer">
   <div id="scrim" onclick="toggleMenu(false)"></div>
   <nav id="menu">
-    <button class="mi" data-page="home"   onclick="go('home')">🏠 خانه</button>
-    <button class="mi" data-page="login"  onclick="go('login')">🔑 ورود تلگرام</button>
-    <button class="mi" data-page="chats"  onclick="go('chats')">💬 چت‌ها</button>
-    <button class="mi" data-page="logs"   onclick="go('logs')">📋 لاگ‌ها</button>
+    <button class="mi" data-page="chats" onclick="go('chats')">💬 چت‌ها</button>
+    <button class="mi" data-page="home" onclick="go('home')">📊 وضعیت سیستم</button>
+    <button class="mi" data-page="login" onclick="go('login')">🔑 ورود تلگرام</button>
+    <button class="mi" data-page="logs" onclick="go('logs')">📋 لاگ‌ها</button>
     <button class="mi" data-page="settings" onclick="go('settings')">⚙️ تنظیمات</button>
     <div class="spacer"></div>
-    <div class="who" id="menuWho">—</div>
+    <div class="note" id="menuWho">—</div>
     <button class="mi" onclick="logoutAdmin()">🚪 خروج از داشبورد</button>
   </nav>
 </div>
 
-<!-- ================= LOGIN (admin) ================= -->
-<div id="loginGate" class="wiz" style="display:none">
-  <div class="logo">🛡️</div>
-  <h2>ورود مدیر</h2>
-  <div class="sub">برای دسترسی به داشبورد، رمز مدیر را وارد کنید</div>
-  <input id="adUser" class="tg-input" placeholder="user" autocapitalize="none" autocorrect="off" spellcheck="false" autocomplete="off" value="admin">
-  <input id="adPass" class="tg-input" type="password" placeholder="password" autocapitalize="none" autocorrect="off" spellcheck="false" autocomplete="off">
-  <button class="tg-btn" onclick="adminLogin()">ورود</button>
-  <div class="msg" id="adMsg"></div>
+<!-- ============ admin login gate ============ -->
+<div id="loginGate">
+  <div class="wiz">
+    <div class="logo">🛡️</div>
+    <h2>ورود مدیر</h2>
+    <div class="sub">برای دسترسی به داشبورد وارد شوید</div>
+    <input id="adUser" class="tg-input" placeholder="user" autocapitalize="none" autocorrect="off" spellcheck="false" autocomplete="off" value="admin">
+    <input id="adPass" class="tg-input" type="password" placeholder="password" autocapitalize="none" autocorrect="off" spellcheck="false" autocomplete="off">
+    <button class="tg-btn" onclick="adminLogin(this)">ورود</button>
+    <div class="msg" id="adMsg"></div>
+  </div>
 </div>
 
-<!-- ================= APP ================= -->
-<div id="app" style="display:none">
+<div id="main" style="display:none">
 
-  <!-- HOME -->
-  <section class="page" id="page-home">
-    <div class="card">
-      <h3>وضعیت سشن تلگرام</h3>
-      <div class="stat"><span class="k">وضعیت</span><span id="stState">—</span></div>
-      <div class="stat"><span class="k">اکانت</span><span id="stMe">—</span></div>
-      <div class="stat"><span class="k">چت‌ها</span><span id="stChats">—</span></div>
-      <div class="stat"><span class="k">ناخوانده</span><span id="stUnread">—</span></div>
-      <div class="stat"><span class="k">حافظهٔ پروسه</span><span id="stRss">—</span></div>
-      <div class="stat"><span class="k">Uptime</span><span id="stUp">—</span></div>
+  <!-- ============ SIDEBAR (chat list) ============ -->
+  <aside id="sidebar">
+    <div id="sideHead">
+      <span>گفتگوها</span>
+      <button class="btn" style="padding:3px 10px;font-size:12px" onclick="loadChats()">↻</button>
     </div>
-    <div class="card" id="homeHint" style="display:none">
-      <h3>شروع</h3>
-      <div style="line-height:2">سشن تلگرام ساخته نشده است.</div>
-      <button class="btn accent" onclick="go('login')">ورود به تلگرام ←</button>
-    </div>
-  </section>
+    <div id="chatList"><div style="padding:14px;color:var(--dim)">—</div></div>
+  </aside>
 
-  <!-- LOGIN WIZARD (telegram-style) -->
-  <section class="page" id="page-login">
-    <div class="wiz" id="wizPhone">
-      <div class="logo">✈️</div>
-      <h2>شمارهٔ خود را وارد کنید</h2>
-      <div class="sub">لطفاً شمارهٔ کشور خود را به همراه کد کشور وارد کنید.</div>
-      <input id="wPhone" class="tg-input" placeholder="+98 912 345 6789" inputmode="tel" autocomplete="tel" autocapitalize="none" spellcheck="false" dir="ltr">
-      <button id="wPhoneBtn" class="tg-btn" onclick="wizPhone()">ارسال کد</button>
-      <div class="msg" id="wPhoneMsg"></div>
-      <div class="hint">کد تأیید به تلگرام همین اکانت ارسال می‌شود.<br>سشن روی سرور ساخته می‌شود — روی این گوشی ذخیره نمی‌شود.</div>
+  <!-- ============ CONTENT ============ -->
+  <section id="content">
+    <div id="emptyMsg">
+      <div class="big">💬</div>
+      <div>یک گفتگو را انتخاب کنید</div>
+      <div style="font-size:12.5px">پیام‌ها از طریق سشن امن سرور خوانده می‌شوند</div>
     </div>
 
-    <div class="wiz" id="wizCode" style="display:none">
-      <div class="logo">🔢</div>
-      <h2>کد تأیید</h2>
-      <div class="sub" id="wCodeSub">کد ۵ رقمی ارسال‌شده را وارد کنید.</div>
-      <input id="wCode" class="tg-input code-big" placeholder="•••••" inputmode="numeric" maxlength="6" autocapitalize="none" spellcheck="false" dir="ltr">
-      <button id="wCodeBtn" class="tg-btn" onclick="wizCode()">ادامه</button>
-      <div class="msg" id="wCodeMsg"></div>
-      <div class="hint"><a href="#" onclick="wizReset();return false" style="color:var(--acc)">تغییر شماره</a></div>
-    </div>
-
-    <div class="wiz" id="wizPass" style="display:none">
-      <div class="logo">🔒</div>
-      <h2>رمز دو مرحله‌ای</h2>
-      <div class="sub">این اکانت رمز دو مرحله‌ای دارد. رمز خود را وارد کنید.</div>
-      <input id="wPass" class="tg-input" type="password" placeholder="رمز 2FA" autocapitalize="none" autocorrect="off" spellcheck="false" autocomplete="off" dir="ltr">
-      <button id="wPassBtn" class="tg-btn" onclick="wizPass()">تأیید</button>
-      <div class="msg" id="wPassMsg"></div>
-    </div>
-
-    <div class="wiz" id="wizDone" style="display:none">
-      <div class="logo" style="background:var(--ok)">✓</div>
-      <h2>سشن ساخته شد</h2>
-      <div class="sub" id="wDoneSub">اکانت با موفقیت وصل شد.</div>
-      <button class="tg-btn" onclick="go('home')">رفتن به خانه</button>
-    </div>
-  </section>
-
-  <!-- CHATS -->
-  <section class="page" id="page-chats">
-    <div class="card">
-      <h3>چت‌ها <button class="btn" style="float:left;padding:4px 12px" onclick="loadChats()">↻</button></h3>
-      <div id="chatList">—</div>
-    </div>
-  </section>
-
-  <!-- LOGS -->
-  <section class="page" id="page-logs">
-    <div class="card">
-      <h3>لاگ سیستم <button class="btn" style="float:left;padding:4px 12px" onclick="loadLogs()">↻</button></h3>
-      <div id="logBox">—</div>
-    </div>
-    <div class="card">
-      <h3>Activity</h3>
-      <div id="actBox" style="font-size:12.5px;color:var(--dim);max-height:24vh;overflow:auto;direction:ltr;text-align:left">—</div>
-    </div>
-  </section>
-
-  <!-- SETTINGS -->
-  <section class="page" id="page-settings">
-    <div class="card">
-      <h3>کنترل TDLib</h3>
-      <div class="row">
-        <button class="btn" onclick="act('/td/start')">Start</button>
-        <button class="btn" onclick="act('/td/restart')">Restart</button>
-        <button class="btn danger" onclick="if(confirm('سشن تلگرام کامل پاک می‌شود. مطمئن هستید؟'))act('/td/logout')">خروج و پاک‌کردن سشن</button>
+    <div id="chatView" style="display:none;flex:1;display:none;flex-direction:column">
+      <div id="chatHead">
+        <button id="backBtn" onclick="closeChat()">→</button>
+        <div class="avat" id="chAvat">?</div>
+        <div style="flex:1;min-width:0">
+          <div id="chatTitle">—</div>
+          <div id="chatSub"></div>
+        </div>
+      </div>
+      <div id="msgs"></div>
+      <div id="typing"></div>
+      <div id="composer">
+        <textarea id="msgInput" rows="1" placeholder="پیام…"></textarea>
+        <button id="sendBtn" onclick="sendMsg()">➤</button>
       </div>
     </div>
-    <div class="card">
-      <h3>پشتیبان‌گیری سشن</h3>
-      <div style="color:var(--dim);font-size:13px;line-height:1.9;margin-bottom:10px">
-        آرشیو کامل دیتابیس TDLib (معادل لاگین اکانت). فایل را جایی امن نگه دارید.
-      </div>
-      <a href="/admin/backup" download><button class="btn accent">دانلود بکاپ (ZIP)</button></a>
-    </div>
-    <div class="card">
-      <h3>سشن‌های داشبورد</h3>
-      <div id="sessList">—</div>
-      <button class="btn danger" style="margin-top:8px" onclick="revokeOthers()">بستن بقیهٔ سشن‌ها</button>
-    </div>
-    <div class="card">
-      <h3>محیط (env)</h3>
-      <div id="envGrid">—</div>
-    </div>
-  </section>
 
+    <!-- HOME -->
+    <div class="panelPage" id="page-home">
+      <div class="card">
+        <h3>وضعیت سشن تلگرام</h3>
+        <div class="stat"><span class="k">وضعیت</span><span id="stState">—</span></div>
+        <div class="stat"><span class="k">اکانت</span><span id="stMe">—</span></div>
+        <div class="stat"><span class="k">چت‌ها</span><span id="stChats">—</span></div>
+        <div class="stat"><span class="k">ناخوانده</span><span id="stUnread">—</span></div>
+        <div class="stat"><span class="k">حافظهٔ پروسه</span><span id="stRss">—</span></div>
+        <div class="stat"><span class="k">Uptime</span><span id="stUp">—</span></div>
+      </div>
+      <div class="card" id="homeHint" style="display:none">
+        <h3>شروع</h3>
+        <div style="line-height:2;margin-bottom:8px">سشن تلگرام هنوز ساخته نشده است.</div>
+        <button class="btn accent" onclick="go('login')">ورود به تلگرام ←</button>
+      </div>
+    </div>
+
+    <!-- LOGIN WIZARD -->
+    <div class="panelPage" id="page-login"><div class="wizWrap">
+      <div class="wiz" id="wizPhone">
+        <div class="logo">✈️</div>
+        <h2>شمارهٔ خود را وارد کنید</h2>
+        <div class="sub">لطفاً شمارهٔ کشور خود را با کد کشور وارد کنید.</div>
+        <input id="wPhone" class="tg-input" placeholder="+98 912 345 6789" inputmode="tel" autocomplete="tel" autocapitalize="none" spellcheck="false" dir="ltr">
+        <button id="wPhoneBtn" class="tg-btn" onclick="wizPhone()">ارسال کد</button>
+        <div class="msg" id="wPhoneMsg"></div>
+        <div class="hint">کد تأیید به اکانت تلگرام ارسال می‌شود.<br>سشن روی سرور ساخته می‌شود — روی گوشی ذخیره نمی‌شود.</div>
+      </div>
+      <div class="wiz" id="wizCode" style="display:none">
+        <div class="logo">🔢</div>
+        <h2>کد تأیید</h2>
+        <div class="sub">کد ارسال‌شده را وارد کنید.</div>
+        <input id="wCode" class="tg-input code-big" placeholder="•••••" inputmode="numeric" maxlength="6" autocapitalize="none" spellcheck="false" dir="ltr">
+        <button id="wCodeBtn" class="tg-btn" onclick="wizCode()">ادامه</button>
+        <div class="msg" id="wCodeMsg"></div>
+        <div class="hint"><a href="#" onclick="wizReset();return false">تغییر شماره</a></div>
+      </div>
+      <div class="wiz" id="wizPass" style="display:none">
+        <div class="logo">🔒</div>
+        <h2>رمز دو مرحله‌ای</h2>
+        <div class="sub">این اکانت رمز دو مرحله‌ای دارد.</div>
+        <input id="wPass" class="tg-input" type="password" placeholder="رمز 2FA" autocapitalize="none" autocorrect="off" spellcheck="false" autocomplete="off" dir="ltr">
+        <button id="wPassBtn" class="tg-btn" onclick="wizPass()">تأیید</button>
+        <div class="msg" id="wPassMsg"></div>
+      </div>
+      <div class="wiz" id="wizDone" style="display:none">
+        <div class="logo" style="background:var(--ok)">✓</div>
+        <h2>سشن ساخته شد</h2>
+        <div class="sub" id="wDoneSub">اکانت وصل شد.</div>
+        <button class="tg-btn" onclick="go('chats')">رفتن به چت‌ها</button>
+      </div>
+    </div></div>
+
+    <!-- LOGS -->
+    <div class="panelPage" id="page-logs">
+      <div class="card">
+        <h3>لاگ سیستم <button class="btn" style="float:left;padding:3px 10px;font-size:12px" onclick="loadLogs()">↻</button></h3>
+        <div id="logBox">—</div>
+      </div>
+      <div class="card">
+        <h3>Activity</h3>
+        <div id="actBox" style="font-size:12px;color:var(--dim);max-height:22vh;overflow:auto;direction:ltr;text-align:left">—</div>
+      </div>
+    </div>
+
+    <!-- SETTINGS -->
+    <div class="panelPage" id="page-settings">
+      <div class="card">
+        <h3>کنترل TDLib</h3>
+        <div class="row">
+          <button class="btn" onclick="act('/td/start',this)">Start</button>
+          <button class="btn" onclick="act('/td/restart',this)">Restart</button>
+          <button class="btn danger" onclick="if(confirm('سشن تلگرام کامل پاک می‌شود. مطمئن هستید؟'))act('/td/logout',this)">خروج و پاک‌کردن سشن</button>
+        </div>
+      </div>
+      <div class="card">
+        <h3>پشتیبان‌گیری سشن</h3>
+        <div style="color:var(--dim);font-size:13px;line-height:1.9;margin-bottom:10px">
+          آرشیو کامل دیتابیس TDLib (معادل لاگین اکانت) — در جای امن نگه دارید.
+        </div>
+        <a href="/admin/backup" download><button class="btn accent">دانلود بکاپ (ZIP)</button></a>
+      </div>
+      <div class="card">
+        <h3>سشن‌های داشبورد</h3>
+        <div id="sessList">—</div>
+        <button class="btn danger" style="margin-top:8px" onclick="revokeOthers(this)">بستن بقیهٔ سشن‌ها</button>
+      </div>
+      <div class="card">
+        <h3>محیط (env)</h3>
+        <div id="envGrid">—</div>
+      </div>
+    </div>
+
+  </section>
 </div>
 
 <div class="toast" id="toast"></div>
 
 <script>
 let SID = localStorage.getItem('adminSid') || '';
-let PAGE = 'home';
+let PAGE = 'chats';            // current panel page
+let CUR = null;                // current chat id
+let ME = null;                 // my user id
 let logsTimer = null;
+const $ = id => document.getElementById(id);
 
 /* ---------- helpers ---------- */
-const $ = id => document.getElementById(id);
 function toast(m){ const t=$('toast'); t.textContent=m; t.style.display='block'; setTimeout(()=>t.style.display='none',3200); }
+function esc(s){ return String(s).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
 async function api(path, opts={}){
   const r = await fetch('/admin'+path, {...opts, headers:{'content-type':'application/json','x-admin-session':SID, ...(opts.headers||{})}});
   if (r.status===401 && path!=='/login'){ showGate(); throw new Error('unauthorized'); }
@@ -249,55 +333,70 @@ async function api(path, opts={}){
   if (!r.ok) throw new Error(j.error || ('HTTP '+r.status));
   return j;
 }
-async function busy(btn, fn){
-  const old = btn.textContent; btn.disabled=true; btn.innerHTML = old+'<span class="spin"></span>';
-  try { return await fn(); } finally { btn.disabled=false; btn.textContent=old; }
-}
+async function busy(btn, fn){ const o=btn.innerHTML; btn.disabled=true; btn.innerHTML=o+'<span class="spin"></span>';
+  try{ return await fn(); } finally { btn.disabled=false; btn.innerHTML=o; } }
 const STATE_FA = {ready:'وصل', need_phone:'نیاز به شماره', need_code:'نیاز به کد', need_password:'نیاز به رمز 2FA',
-                   init:'در حال راه‌اندازی', closed:'بسته', 'not-started':'شروع نشده', logging_out:'در حال خروج'};
-function stateBadge(s){ return {ready:'b-ok', need_phone:'b-warn', need_code:'b-warn', need_password:'b-warn', init:'b-warn', closed:'b-err','not-started':'b-err', logging_out:'b-warn'}[s]||'b-warn'; }
-function stateDot(s){ return {ready:'ok', need_phone:'warn', need_code:'warn', need_password:'warn', init:'warn', closed:'err','not-started':'err', logging_out:'warn'}[s]||'warn'; }
+                   init:'راه‌اندازی', closed:'بسته', 'not-started':'شروع نشده', logging_out:'خروج'};
+function stateDot(s){ return {ready:'ok',need_phone:'warn',need_code:'warn',need_password:'warn',init:'warn',closed:'err','not-started':'err',logging_out:'warn'}[s]||'warn'; }
+function fmtTime(ts){ if(!ts) return ''; const d=new Date(ts*1000); return d.toLocaleTimeString('fa-IR',{hour:'2-digit',minute:'2-digit'}); }
+function fmtDay(ts){ const d=new Date(ts*1000); return d.toLocaleDateString('fa-IR'); }
 
-/* ---------- gate / menu / navigation ---------- */
-function showGate(){ $('loginGate').style.display='block'; $('app').style.display='none'; }
-function showApp(){ $('loginGate').style.display='none'; $('app').style.display='block'; go(PAGE); refreshHdr(); }
+/* ---------- gate / drawer ---------- */
+function showGate(){ $('loginGate').style.display='block'; $('main').style.display='none'; }
+function showApp(){ $('loginGate').style.display='none'; $('main').style.display='flex'; go(PAGE); refreshHdr(); }
 function toggleMenu(open){ $('drawer').classList.toggle('open', open); }
-async function adminLogin(){
+async function adminLogin(btn){
   const b=$('adMsg'); b.className='msg'; b.textContent='';
-  try{
-    await busy($('adUser').parentNode.querySelector('button') || event.target, async()=>{
-      const j = await api('/login', {method:'POST', body:JSON.stringify({user:$('adUser').value, password:$('adPass').value})});
-      SID=j.sid; localStorage.setItem('adminSid',SID); $('adPass').value=''; showApp();
-    });
-  }catch(e){ b.className='msg err'; b.textContent = e.message==='unauthorized'?'':e.message; }
+  try{ await busy(btn, async()=>{
+    const j = await api('/login',{method:'POST',body:JSON.stringify({user:$('adUser').value,password:$('adPass').value})});
+    SID=j.sid; localStorage.setItem('adminSid',SID); $('adPass').value=''; showApp();
+  });}catch(e){ b.className='msg err'; if(e.message!=='unauthorized') b.textContent=e.message; }
 }
 function logoutAdmin(){ api('/logout',{method:'POST'}).catch(()=>{}); localStorage.removeItem('adminSid'); SID=''; toggleMenu(false); showGate(); }
+
+/* ---------- navigation ---------- */
 function go(p){
   PAGE=p; toggleMenu(false);
-  document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));
-  $('page-'+p).classList.add('active');
-  document.querySelectorAll('#menu .mi').forEach(x=>x.classList.toggle('active', x.dataset.page===p));
-  $('hdrTitle').textContent = {home:'خانه', login:'ورود تلگرام', chats:'چت‌ها', logs:'لاگ‌ها', settings:'تنظیمات'}[p];
+  document.body.classList.remove('chatOpen');
+  $('chatView').style.display='none'; $('emptyMsg').style.display='none';
+  document.querySelectorAll('.panelPage').forEach(x=>x.classList.remove('active'));
+  if (['home','login','logs','settings'].includes(p)){
+    $('page-'+p).classList.add('active');
+    $('sidebar').style.display='none';
+    $('hdrTitle').textContent={home:'وضعیت سیستم',login:'ورود تلگرام',logs:'لاگ‌ها',settings:'تنظیمات'}[p];
+  } else {
+    $('sidebar').style.display='flex';
+    $('hdrTitle').textContent='چت‌ها';
+    $('emptyMsg').style.display='flex';
+    loadChats();
+  }
+  document.querySelectorAll('#menu .mi').forEach(x=>x.classList.toggle('active',x.dataset.page===p));
   if (p==='home') loadHome();
   if (p==='login') wizSync();
-  if (p==='chats') loadChats();
-  if (p==='logs'){ loadLogs(); clearInterval(logsTimer); logsTimer=setInterval(loadLogs, 3000); }
-  else clearInterval(logsTimer);
+  if (p==='logs'){ loadLogs(); clearInterval(logsTimer); logsTimer=setInterval(loadLogs,3000); } else clearInterval(logsTimer);
   if (p==='settings') loadSettings();
 }
-function refreshHdr(){ api('/status').then(st=>{ $('hdrState').innerHTML = `<span class="dot ${stateDot(st.tdState)}"></span>`; $('menuWho').textContent = st.me ? (st.me.first_name||'')+' '+(st.me.phone_number||'') : 'اکانت وصل نیست'; }).catch(()=>{}); }
+async function refreshHdr(){
+  try{
+    const st = await api('/status');
+    $('hdrDot').className='dot '+stateDot(st.tdState);
+    $('hdrMe').textContent = st.me ? (st.me.first_name||'') : (STATE_FA[st.tdState]||st.tdState);
+    $('menuWho').textContent = st.me ? `${st.me.first_name||''} ${st.me.last_name||''} · ${st.me.phone_number||''}` : 'اکانت وصل نیست';
+    ME = st.me ? st.me.id : null;
+  }catch(e){}
+}
 
 /* ---------- home ---------- */
 async function loadHome(){
   try{
     const st = await api('/status');
-    $('stState').innerHTML = `<span class="badge ${stateBadge(st.tdState)}">${STATE_FA[st.tdState]||st.tdState}</span>`;
+    $('stState').innerHTML = `<span class="badge b-${stateDot(st.tdState)==='ok'?'ok':(stateDot(st.tdState)==='warn'?'warn':'err')}">${STATE_FA[st.tdState]||st.tdState}</span>`;
     $('stRss').textContent = st.process.rssMB+' MB';
     $('stUp').textContent = Math.floor(st.process.uptimeSec/60)+' دقیقه';
-    $('homeHint').style.display = (st.tdState==='ready') ? 'none' : 'block';
+    $('homeHint').style.display = (st.tdState==='ready')?'none':'block';
     if (st.tdState==='ready'){
       const me = await api('/me');
-      $('stMe').textContent = me.me ? `${me.me.first_name||''} ${me.me.last_name||''} (${me.me.phone_number||''})` : '—';
+      $('stMe').textContent = me.me ? `${me.me.first_name||''} (${me.me.phone_number||''})` : '—';
       $('stChats').textContent = me.chats ?? '—';
       $('stUnread').textContent = me.unread ?? '—';
     } else { $('stMe').textContent='—'; $('stChats').textContent='—'; $('stUnread').textContent='—'; }
@@ -305,76 +404,106 @@ async function loadHome(){
   }catch(e){}
 }
 
-/* ---------- telegram login wizard ---------- */
-let wizTimer=null;
-function wizShow(id){ ['wizPhone','wizCode','wizPass','wizDone'].forEach(w=>$(''+w).style.display = (w===id?'block':'none')); }
-async function wizSync(){
-  // align the wizard with the actual TDLib state
+/* ---------- chats (telegram-web style) ---------- */
+async function loadChats(){
   try{
-    const st = await api('/status');
-    const s = st.tdState;
-    if (s==='ready'){ $('wDoneSub').textContent = st.me? `وصل شد به‌عنوان ${(st.me.first_name||'')} (${st.me.phone_number||''})`:'وصل شد.'; return wizShow('wizDone'); }
+    const j = await api('/chats?limit=40');
+    if (!j.count){ $('chatList').innerHTML='<div style="padding:14px;color:var(--dim)">چتی نیست.</div>'; return; }
+    $('chatList').innerHTML = j.chats.map(c=>`
+      <div class="chat ${CUR===c.id?'sel':''}" onclick="openChat(${c.id},'${esc(c.title).replace(/'/g,'&#39;')}')">
+        <div class="avat">${esc((c.title||'?').slice(0,1).toUpperCase())}</div>
+        <div class="t">
+          <div class="r1"><span class="ttl">${esc(c.title||'—')}</span><span class="ts">${fmtTime(c.last_ts)}</span></div>
+          <div class="r2"><span class="last">${esc(c.last||'')}</span>${c.unread?`<span class="unread">${c.unread}</span>`:''}</div>
+        </div>
+      </div>`).join('');
+  }catch(e){ $('chatList').innerHTML=`<div style="padding:14px;color:var(--dim)">${esc(e.message)}</div>`; }
+}
+async function openChat(id, title){
+  CUR=id;
+  document.body.classList.add('chatOpen');
+  $('emptyMsg').style.display='none';
+  $('chatView').style.display='flex';
+  $('chatTitle').textContent=title;
+  $('chAvat').textContent=(title||'?').slice(0,1).toUpperCase();
+  $('chatSub').textContent='در حال بارگذاری…';
+  $('msgs').innerHTML='';
+  document.querySelectorAll('.chat').forEach(x=>x.classList.remove('sel'));
+  event && event.currentTarget && event.currentTarget.classList.add('sel');
+  await loadMsgs();
+  loadChats().catch(()=>{});
+}
+function closeChat(){ CUR=null; document.body.classList.remove('chatOpen'); $('chatView').style.display='none'; $('emptyMsg').style.display='flex'; }
+async function loadMsgs(){
+  if (!CUR) return;
+  try{
+    const j = await api(`/chats/${CUR}/messages?limit=50`);
+    $('chatSub').textContent = j.count+' پیام اخیر';
+    let html='', lastDay='';
+    for (const m of j.messages.slice().reverse()){
+      const day=fmtDay(m.date);
+      if (day!==lastDay){ html+=`<div class="daysep">${day}</div>`; lastDay=day; }
+      const senderName = (!m.out && m.sender_id>0 && j.names[m.sender_id]) ? `<div class="sender">${esc(j.names[m.sender_id])}</div>` : '';
+      const body = m.kind==='text' ? esc(m.text) : `<span class="mediatag">${({photo:'🖼 عکس',voice:'🎙 ویس',file:'📎 فایل',sticker:'🎨 استیکر',gif:'🎞 GIF',other:'پیام'})[m.kind]||'پیام'}</span>${m.text?' '+esc(m.text):''}`;
+      html += `<div class="bub ${m.out?'out':'in'}">${senderName}${body}<div class="meta">${fmtTime(m.date)}${m.edited?' · ویرایش':''}</div></div>`;
+    }
+    $('msgs').innerHTML = html || '<div style="text-align:center;color:var(--dim);margin-top:30px">پیامی نیست</div>';
+    $('msgs').scrollTop = $('msgs').scrollHeight;
+  }catch(e){ $('chatSub').textContent=''; $('msgs').innerHTML=`<div style="text-align:center;color:var(--err);margin-top:30px">${esc(e.message)}</div>`; }
+}
+async function sendMsg(){
+  const inp=$('msgInput'); const text=inp.value.trim(); if(!text||!CUR) return;
+  $('sendBtn').disabled=true;
+  try{
+    await api(`/chats/${CUR}/messages`,{method:'POST',body:JSON.stringify({text})});
+    inp.value=''; await loadMsgs(); loadChats().catch(()=>{});
+  }catch(e){ toast(e.message); }
+  $('sendBtn').disabled=false;
+}
+$('msgInput').addEventListener('keydown', e=>{ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); sendMsg(); } });
+
+/* ---------- login wizard ---------- */
+function wizShow(id){ ['wizPhone','wizCode','wizPass','wizDone'].forEach(w=>$(w).style.display=(w===id?'block':'none')); }
+async function wizSync(){
+  try{
+    const st = await api('/status'); const s=st.tdState;
+    if (s==='ready'){ $('wDoneSub').textContent = st.me?`وصل شد به‌عنوان ${st.me.first_name||''} (${st.me.phone_number||''})`:'وصل شد.'; return wizShow('wizDone'); }
     if (s==='need_code') return wizShow('wizCode');
     if (s==='need_password') return wizShow('wizPass');
-    if (s==='need_phone' || s==='not-started' || s==='closed' || s==='init'){ wizShow('wizPhone'); if(s==='not-started'||s==='closed'){ try{await api('/td/start',{method:'POST'})}catch(e){} } return; }
     wizShow('wizPhone');
+    if (s==='not-started'||s==='closed'){ try{ await api('/td/start',{method:'POST'}); }catch(e){} }
   }catch(e){}
 }
 async function wizPhone(){
-  const btn=$('wPhoneBtn');
-  try{
-    await busy(btn, async()=>{
-      await api('/auth/phone', {method:'POST', body:JSON.stringify({phone:$('wPhone').value.replace(/[^\d+]/g,'')})});
-    });
-    $('wPhoneMsg').className='msg ok'; $('wPhoneMsg').textContent='کد ارسال شد…';
-    setTimeout(()=>{ wizShow('wizCode'); $('wCode').focus(); }, 400);
+  try{ await busy($('wPhoneBtn'), async()=>{ await api('/auth/phone',{method:'POST',body:JSON.stringify({phone:$('wPhone').value.replace(/[^\d+]/g,'')})}); });
+    const m=$('wPhoneMsg'); m.className='msg ok'; m.textContent='کد ارسال شد…';
+    setTimeout(()=>{ wizShow('wizCode'); $('wCode').focus(); },400);
   }catch(e){
     const m=$('wPhoneMsg'); m.className='msg err';
-    m.textContent = /PHONE_(NUMBER_)?INVALID|PHONE_NUMBER_BANNED/.test(e.message) ? 'شماره نامعتبر است.' :
-                    /FLOOD/.test(e.message) ? 'تلاش زیاد؛ چند دقیقه صبر کنید.' : e.message;
+    m.textContent = /PHONE_(NUMBER_)?INVALID|PHONE_NUMBER_BANNED/.test(e.message)?'شماره نامعتبر است.':/FLOOD/.test(e.message)?'تلاش زیاد؛ چند دقیقه صبر کنید.':e.message;
   }
 }
 async function wizCode(){
-  const btn=$('wCodeBtn');
-  try{
-    await busy(btn, async()=>{ await api('/auth/code', {method:'POST', body:JSON.stringify({code:$('wCode').value.trim()})}); });
-    // state will move to need_password or ready — poll once
+  try{ await busy($('wCodeBtn'), async()=>{ await api('/auth/code',{method:'POST',body:JSON.stringify({code:$('wCode').value.trim()})}); });
     const st = await api('/status');
-    if (st.tdState==='need_password') { wizShow('wizPass'); $('wPass').focus(); }
+    if (st.tdState==='need_password'){ wizShow('wizPass'); $('wPass').focus(); }
     else if (st.tdState==='ready'){ $('wDoneSub').textContent='وصل شد.'; wizShow('wizDone'); refreshHdr(); }
-    else { wizSync(); }
+    else wizSync();
   }catch(e){
     const m=$('wCodeMsg'); m.className='msg err';
-    m.textContent = /PHONE_CODE_(INVALID|EXPIRED)/.test(e.message) ? 'کد اشتباه یا منقضی است.' : e.message;
+    m.textContent = /PHONE_CODE_(INVALID|EXPIRED)/.test(e.message)?'کد اشتباه یا منقضی است.':e.message;
     $('wCode').classList.add('err'); setTimeout(()=>$('wCode').classList.remove('err'),900);
   }
 }
 async function wizPass(){
-  const btn=$('wPassBtn');
-  try{
-    await busy(btn, async()=>{ await api('/auth/password', {method:'POST', body:JSON.stringify({password:$('wPass').value})}); });
+  try{ await busy($('wPassBtn'), async()=>{ await api('/auth/password',{method:'POST',body:JSON.stringify({password:$('wPass').value})}); });
     $('wDoneSub').textContent='وصل شد.'; wizShow('wizDone'); refreshHdr();
   }catch(e){
     const m=$('wPassMsg'); m.className='msg err';
-    m.textContent = /PASSWORD_(HASH_)?INVALID/.test(e.message) ? 'رمز اشتباه است.' : e.message;
+    m.textContent = /PASSWORD_(HASH_)?INVALID/.test(e.message)?'رمز اشتباه است.':e.message;
   }
 }
 function wizReset(){ fetch('/admin/td/restart',{method:'POST',headers:{'x-admin-session':SID}}).finally(()=>setTimeout(wizSync,600)); }
-
-/* ---------- chats ---------- */
-async function loadChats(){
-  try{
-    const j = await api('/chats?limit=30');
-    if (!j.count){ $('chatList').textContent='چتی نیست.'; return; }
-    $('chatList').innerHTML = j.chats.map(c=>{
-      const ini=(c.title||'?').slice(0,1).toUpperCase();
-      return `<div class="chat"><div class="avat">${ini}</div>
-        <div class="t"><div class="ttl">${esc(c.title||'—')}</div><div class="last">${esc(c.last||'')}</div></div>
-        ${c.unread?`<span class="unread">${c.unread}</span>`:''}</div>`;
-    }).join('');
-  }catch(e){ $('chatList').innerHTML = `<div style="color:var(--dim);padding:8px">${esc(e.message)}</div>`; }
-}
-function esc(s){ return String(s).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
 
 /* ---------- logs ---------- */
 async function loadLogs(){
@@ -390,17 +519,15 @@ async function loadLogs(){
 async function loadSettings(){
   try{
     const st = await api('/status');
-    $('envGrid').innerHTML = Object.entries(st.env).map(([k,v])=>
-      `<div class="stat"><span class="k">${k}</span><span>${esc(v)}</span></div>`).join('');
+    $('envGrid').innerHTML = Object.entries(st.env).map(([k,v])=>`<div class="stat"><span class="k">${k}</span><span>${esc(v)}</span></div>`).join('');
     const s = await api('/sessions');
     $('sessList').innerHTML = s.sessions.length? s.sessions.map(x=>
-      `<div class="stat"><span class="k">${x.sid}</span><span>${x.expires_in_min} دقیقه مانده <button class="btn" style="padding:2px 10px;font-size:12px" onclick="revoke('${x.sid}')">بستن</button></span></div>`).join('')
-      : 'سپشنی وجود ندارد';
+      `<div class="stat"><span class="k" style="direction:ltr">${x.sid}</span><span>${x.expires_in_min} دقیقه مانده</span></div>`).join('')
+      : 'سپشنی نیست';
   }catch(e){}
 }
-async function revoke(sid){ try{ await api('/sessions/revoke',{method:'POST',body:JSON.stringify({sid})}); loadSettings(); toast('سشن بسته شد'); }catch(e){ toast(e.message);} }
-async function revokeOthers(){ try{ await api('/sessions/revoke-others',{method:'POST'}); loadSettings(); toast('بقیهٔ سشن‌ها بسته شدند'); }catch(e){ toast(e.message);} }
-async function act(p){ try{ await busy(event.target, async()=>{ await api(p,{method:'POST'}); }); toast('انجام شد'); refreshHdr(); if(PAGE==='home')loadHome(); }catch(e){ toast(e.message);} }
+async function revokeOthers(btn){ try{ await busy(btn, async()=>{ await api('/sessions/revoke-others',{method:'POST'}); }); toast('بقیهٔ سشن‌ها بسته شدند'); loadSettings(); }catch(e){ toast(e.message); } }
+async function act(p, btn){ try{ await busy(btn, async()=>{ await api(p,{method:'POST'}); }); toast('انجام شد'); refreshHdr(); }catch(e){ toast(e.message); } }
 
 /* ---------- boot ---------- */
 (async function(){
